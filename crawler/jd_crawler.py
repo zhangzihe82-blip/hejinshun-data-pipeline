@@ -37,10 +37,9 @@ def scrape_jd(count=50, url=None, stop_check=None, progress_callback=None, messa
         co = _create_options()
         co.headless(False)
 
-        # 修复：使用临时目录避免配置文件冲突
-        import tempfile
-        temp_profile = tempfile.mkdtemp(prefix='jd_crawler_')
-        co.set_argument(f'--user-data-dir={temp_profile}')
+        # 使用固定目录保存登录状态
+        os.makedirs(PROFILE_DIR, exist_ok=True)
+        co.set_argument(f'--user-data-dir={PROFILE_DIR}')
 
         page = _create_page(co)
         page.set.load_mode.eager()  # 快速加载模式
@@ -59,7 +58,36 @@ def scrape_jd(count=50, url=None, stop_check=None, progress_callback=None, messa
                 message_callback(f'页面加载超时，尝试继续...')
             logger.warning(f'页面加载超时: {e}')
 
-        time.sleep(2)
+        time.sleep(3)
+
+        # 检查是否被反爬虫拦截
+        current_url = page.url or ''
+        retry_count = 0
+        max_retries = 3
+
+        while ('risk_handler' in current_url or 'cfe.m.jd.com' in current_url) and retry_count < max_retries:
+            retry_count += 1
+            if message_callback:
+                message_callback(f'检测到反爬虫机制，尝试绕过 ({retry_count}/{max_retries})...')
+
+            # 等待几秒
+            time.sleep(3)
+
+            # 尝试重新访问
+            try:
+                page.get(page_url, timeout=PAGE_LOAD_TIMEOUT)
+                time.sleep(3)
+            except:
+                pass
+
+            current_url = page.url or ''
+
+        # 如果还是被拦截，返回空
+        if 'risk_handler' in current_url or 'cfe.m.jd.com' in current_url:
+            if message_callback:
+                message_callback('无法绕过反爬虫，建议：1. 手动登录京东账号后重试 2. 等待10分钟后重试 3. 更换网络环境')
+            logger.error('京东反爬虫拦截')
+            return []
 
         # 检查是否被反爬虫拦截
         current_url = page.url or ''
@@ -87,7 +115,24 @@ def scrape_jd(count=50, url=None, stop_check=None, progress_callback=None, messa
 
         # 检查登录 - 添加超时检测
         current_url = page.url or ''
-        if 'passport.jd.com' in current_url:
+        if 'passport.jd.com' in current_url or 'login' in current_url.lower():
+            if message_callback:
+                message_callback('京东需要登录，请在浏览器窗口中登录（120秒内）')
+            if not _wait_for_login(page, stop_check):
+                if message_callback:
+                    message_callback('登录超时或取消')
+                return []
+            if message_callback:
+                message_callback('登录成功，继续访问...')
+            try:
+                page.get(page_url, timeout=PAGE_LOAD_TIMEOUT)
+                time.sleep(2)
+            except Exception as e:
+                logger.warning(f'重新加载页面失败: {e}')
+
+        # 开始采集
+        if message_callback:
+            message_callback('开始采集商品数据...')
             if message_callback:
                 message_callback('请在弹出的浏览器中登录京东账号（120秒内）')
             if not _wait_for_login(page, stop_check):
@@ -192,13 +237,6 @@ def scrape_jd(count=50, url=None, stop_check=None, progress_callback=None, messa
                 page.quit()
             except Exception:
                 pass
-        # 清理临时目录
-        try:
-            import shutil
-            if 'temp_profile' in locals():
-                shutil.rmtree(temp_profile, ignore_errors=True)
-        except:
-            pass
 
 
 def _extract_jd(card):
@@ -288,8 +326,12 @@ def _wait_for_login(page, stop_check, timeout=LOGIN_TIMEOUT):
         if stop_check and stop_check():
             return False
         try:
-            if 'passport.jd.com' not in page.url and ('search.jd.com' in page.url or 'list.jd.com' in page.url):
-                return True
+            current_url = page.url or ''
+            # 检查是否已经离开登录页面
+            if 'passport.jd.com' not in current_url and 'login' not in current_url.lower():
+                # 并且在京东搜索或列表页面
+                if 'search.jd.com' in current_url or 'list.jd.com' in current_url or 'jd.com' in current_url:
+                    return True
         except Exception:
             pass
         time.sleep(1.5)
