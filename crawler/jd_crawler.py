@@ -133,23 +133,6 @@ def scrape_jd(count=50, url=None, stop_check=None, progress_callback=None, messa
         # 开始采集
         if message_callback:
             message_callback('开始采集商品数据...')
-            if message_callback:
-                message_callback('请在弹出的浏览器中登录京东账号（120秒内）')
-            if not _wait_for_login(page, stop_check):
-                if message_callback:
-                    message_callback('登录超时，请重试')
-                return []
-            if message_callback:
-                message_callback('登录成功，开始采集...')
-            try:
-                page.get(page_url, timeout=PAGE_LOAD_TIMEOUT)
-            except Exception as e:
-                logger.warning(f'重新加载页面超时: {e}')
-            time.sleep(2)
-
-        # 开始采集
-        if message_callback:
-            message_callback('开始采集商品数据...')
 
         # 翻页爬取
         while len(products) < count and page_num <= 10:

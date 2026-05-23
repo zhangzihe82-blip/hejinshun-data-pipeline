@@ -43,6 +43,15 @@ def create_dashboard_app():
         with _status_lock:
             return dict(_scrape_status)
 
+    def _reset_status():
+        """重置状态"""
+        with _status_lock:
+            _scrape_status['running'] = False
+            _scrape_status['total'] = 0
+            _scrape_status['current'] = 0
+            _scrape_status['message'] = '就绪'
+            _scrape_status['should_stop'] = False
+
     # ─── 页面路由 ─────────────────────────────────────────────
 
     @app.route('/')
@@ -144,6 +153,12 @@ def create_dashboard_app():
     def api_stop():
         _update_status(should_stop=True, message='正在停止...')
         return jsonify({'success': True, 'message': '停止信号已发送'})
+
+    @app.route('/api/reset', methods=['POST'])
+    def api_reset():
+        """重置采集状态"""
+        _reset_status()
+        return jsonify({'success': True, 'message': '状态已重置'})
 
     @app.route('/api/clear', methods=['DELETE'])
     def api_clear():
