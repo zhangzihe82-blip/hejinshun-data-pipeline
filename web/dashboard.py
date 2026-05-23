@@ -24,7 +24,7 @@ def create_dashboard_app():
         _template_dir = os.path.join(_root, 'templates')
         app = Flask(__name__, template_folder=_template_dir)
 
-    # 爬取状态
+    # 数据采集状态
     _scrape_status = {
         'running': False,
         'total': 0,
@@ -74,15 +74,21 @@ def create_dashboard_app():
 
     @app.route('/api/scrape', methods=['POST'])
     def api_scrape():
-        if _scrape_status['running']:
-            return jsonify({'error': '爬取任务正在进行中'}), 400
+        with _status_lock:
+            if _scrape_status['running']:
+                return jsonify({'error': '数据采集任务正在进行中，请等待完成或停止当前任务'}), 400
+            # 重置状态
+            _scrape_status['running'] = True
+            _scrape_status['total'] = 0
+            _scrape_status['current'] = 0
+            _scrape_status['message'] = '准备采集...'
+            _scrape_status['should_stop'] = False
 
         data = request.get_json() or {}
         count = max(1, min(int(data.get('count', 50)), 200))
         url = data.get('url', '').strip() or None
 
-        _update_status(running=True, total=count, current=0,
-                       message=f'准备爬取 {count} 条数据...', should_stop=False)
+        _update_status(total=count, message=f'准备采集 {count} 条数据...')
 
         def _task():
             try:
@@ -92,33 +98,47 @@ def create_dashboard_app():
                     save_raw, save_cleaned, read_cleaned
                 )
 
+                # 阶段1：数据采集
+                _update_status(message='📡 正在连接数据源...')
                 products = scrape(
                     count=count,
                     url=url,
                     stop_check=lambda: _scrape_status['should_stop'],
                     progress_callback=lambda cur, tot: _update_status(
-                        current=cur, message=f'正在爬取 {cur}/{tot}'),
+                        current=cur, message=f'🔄 正在采集数据 {cur}/{tot}'),
                     message_callback=lambda msg: _update_status(message=msg)
                 )
 
-                # 保存到Excel
+                if not products:
+                    _update_status(running=False, message='❌ 未获取到有效数据')
+                    return
+
+                # 阶段2：数据清洗
+                _update_status(message='🔧 开始数据清洗处理...')
                 cleaned = clean_records(products)
+
+                # 阶段3：数据入库
                 if cleaned:
+                    _update_status(message='💾 保存原始数据...')
                     save_raw(products)
+
+                    _update_status(message='📊 合并已有数据...')
                     existing = read_cleaned()
                     merged = merge_data(existing, cleaned)
+
+                    _update_status(message='💾 写入存储引擎...')
                     save_cleaned(merged)
 
                 _update_status(running=False, current=len(products),
-                               message=f'完成！共入库 {len(cleaned)} 条数据')
-                logger.info('爬取完成 — %d 条', len(products))
+                               message=f'✅ 完成！共入库 {len(cleaned)} 条数据')
+                logger.info('数据采集完成 — %d 条', len(products))
             except Exception as exc:
-                logger.exception('爬取出错')
-                _update_status(running=False, message=f'出错: {exc}')
+                logger.exception('数据采集出错')
+                _update_status(running=False, message=f'❌ 出错: {exc}')
 
         t = threading.Thread(target=_task, daemon=True)
         t.start()
-        return jsonify({'success': True, 'message': '爬取任务已启动'})
+        return jsonify({'success': True, 'message': '数据采集任务已启动'})
 
     @app.route('/api/stop', methods=['POST'])
     def api_stop():

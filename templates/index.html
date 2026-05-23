@@ -201,6 +201,104 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
 
 .no-data-hint { text-align: center; padding: 60px; color: var(--text-dim); font-size: 15px; }
 
+/* ─── 数据接入模块 ─── */
+.ingest-panel {
+  position: relative; z-index: 1;
+  padding: 20px 24px; max-width: 1200px; margin: 0 auto;
+}
+.ingest-control {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 18px; margin-bottom: 16px;
+}
+.ingest-input-row {
+  display: flex; gap: 12px; align-items: flex-end;
+}
+.ingest-input-row .input-group {
+  flex: 1; display: flex; flex-direction: column; gap: 6px;
+}
+.ingest-input-row label {
+  font-size: 12px; color: var(--text-dim); font-weight: 500;
+}
+.ingest-input-row input {
+  padding: 8px 12px; border: 1px solid var(--border-glow);
+  border-radius: 6px; font-size: 13px; outline: none;
+  background: rgba(0,0,0,.3); color: var(--text);
+}
+.ingest-input-row input:focus { border-color: var(--accent); }
+.btn-row { display: flex; gap: 8px; }
+
+/* 进度条 */
+.progress-section {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 16px 18px; margin-bottom: 16px;
+}
+.progress-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.progress-title { font-size: 13px; color: var(--text); }
+.progress-percent { font-size: 13px; color: var(--accent); font-weight: 600; }
+.progress-bar {
+  height: 8px; background: rgba(0,0,0,.4); border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 4px; transition: width 0.3s ease;
+}
+
+/* 瀑布流日志控制台 */
+.console-wrapper {
+  background: rgba(0,0,0,.5); border: 1px solid var(--border-glow);
+  border-radius: 8px; overflow: hidden;
+}
+.console-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: rgba(0,0,0,.3);
+  border-bottom: 1px solid var(--border-glow);
+}
+.console-title { font-size: 12px; color: var(--text-dim); }
+.console-clear {
+  padding: 4px 10px; border: 1px solid var(--border-glow);
+  border-radius: 4px; font-size: 11px; cursor: pointer;
+  background: transparent; color: var(--text-dim);
+  transition: all .2s;
+}
+.console-clear:hover { border-color: var(--accent); color: var(--accent); }
+.console-body {
+  height: 320px; overflow-y: auto; padding: 12px 14px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px; line-height: 1.7;
+}
+.console-body::-webkit-scrollbar { width: 6px; }
+.console-body::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+.console-body::-webkit-scrollbar-track { background: rgba(0,0,0,.2); }
+
+.console-line {
+  padding: 2px 0; animation: fadeIn .3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.console-line.info { color: var(--text-dim); }
+.console-line.success { color: var(--green); }
+.console-line.warning { color: var(--gold); }
+.console-line.error { color: var(--warn); }
+.console-line.process { color: var(--cyan); }
+.console-line .time { color: var(--text-dim); opacity: .6; margin-right: 6px; }
+.console-line .icon { margin-right: 4px; }
+
+/* 处理入库按钮 */
+.process-section {
+  text-align: center; margin-top: 16px;
+}
+.btn-process {
+  padding: 12px 36px; font-size: 14px; font-weight: 600;
+  border: 2px solid var(--green); color: var(--green);
+  background: rgba(0,230,118,.1); border-radius: 8px;
+  cursor: pointer; transition: all .2s;
+}
+.btn-process:hover { background: var(--green); color: #fff; }
+.btn-process:disabled { opacity: .4; cursor: not-allowed; }
+
 @media (max-width: 1200px) {
   .main-grid { grid-template-columns: 1fr 1fr; }
   .stat-row { grid-template-columns: repeat(3, 1fr); }
@@ -219,13 +317,14 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
   <h1>电商数据可视化监控大屏</h1>
   <div class="subtitle">E-COMMERCE DATA VISUALIZATION DASHBOARD</div>
   <div class="tabs-nav">
-    <button class="tab-nav-btn active" onclick="switchMode('scrape')">电商数据大屏</button>
-    <button class="tab-nav-btn" onclick="switchMode('custom')">自定义数据大屏</button>
+    <button class="tab-nav-btn" onclick="switchMode('scrape')">数据看板</button>
+    <button class="tab-nav-btn active" onclick="switchMode('ingest')">数据接入</button>
+    <button class="tab-nav-btn" onclick="switchMode('custom')">自定义分析</button>
   </div>
 </div>
 
-<!-- ═══ 电商数据大屏模式 ═══ -->
-<div class="mode-section active" id="modeScrape">
+<!-- ═══ 数据看板模式 ═══ -->
+<div class="mode-section" id="modeScrape">
 
 <!-- 统计卡片 -->
 <div class="stat-row" id="statRow">
@@ -238,10 +337,10 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
 
 <!-- 控制栏 -->
 <div class="control-bar">
-  <input type="text" id="urlInput" placeholder="粘贴搜索页网址… 如 https://search.jd.com/Search?keyword=气球">
+  <input type="text" id="urlInput" placeholder="粘贴数据源网址… 如 https://search.jd.com/Search?keyword=气球">
   <input type="number" id="countInput" value="30" min="1" max="200" step="10">
-  <button class="btn" id="btnStart" onclick="startScrape()">开始爬取</button>
-  <button class="btn btn-danger" id="btnStop" onclick="stopScrape()" disabled>停止</button>
+  <button class="btn" id="btnStart" onclick="startScrape()">开始采集</button>
+  <button class="btn btn-danger" id="btnStop" onclick="stopScrape()" disabled>中止采集</button>
   <button class="btn" onclick="clearData()" style="border-color:var(--text-dim);color:var(--text-dim);background:transparent;">清空数据</button>
   <span class="status-dot idle" id="statusDot"></span>
   <span class="status-msg" id="statusMsg">就绪</span>
@@ -294,11 +393,11 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
         <thead>
           <tr>
             <th>商品名称</th><th style="width:90px">价格</th><th style="width:70px">原价</th>
-            <th style="width:85px">平台</th><th style="width:70px">评论数</th><th style="width:110px">爬取时间</th>
+            <th style="width:85px">平台</th><th style="width:70px">评论数</th><th style="width:110px">采集时间</th>
           </tr>
         </thead>
         <tbody id="tableBody">
-          <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-dim)">暂无数据，请先爬取</td></tr>
+          <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-dim)">暂无数据，请先采集数据</td></tr>
         </tbody>
       </table>
     </div>
@@ -306,6 +405,61 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
 </div>
 
 </div><!-- /modeScrape -->
+
+<!-- ═══ 数据接入模式 ═══ -->
+<div class="mode-section" id="modeIngest">
+  <div class="ingest-panel">
+    <!-- 控制区 -->
+    <div class="ingest-control">
+      <div class="ingest-input-row">
+        <div class="input-group">
+          <label>数据源地址</label>
+          <input type="text" id="ingestUrl" placeholder="粘贴数据源网址… 如 https://search.jd.com/Search?keyword=气球">
+        </div>
+        <div class="input-group" style="width:120px;">
+          <label>采集数量</label>
+          <input type="number" id="ingestCount" value="30" min="1" max="200" step="10">
+        </div>
+        <div class="input-group" style="width:auto;">
+          <label>&nbsp;</label>
+          <div class="btn-row">
+            <button class="btn" id="btnIngestStart" onclick="startIngest()">开始采集</button>
+            <button class="btn btn-danger" id="btnIngestStop" onclick="stopIngest()" disabled>中止</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 进度条 -->
+    <div class="progress-section" id="progressSection" style="display:none;">
+      <div class="progress-header">
+        <span class="progress-title" id="progressTitle">准备采集...</span>
+        <span class="progress-percent" id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+      </div>
+    </div>
+
+    <!-- 瀑布流日志控制台 -->
+    <div class="console-wrapper">
+      <div class="console-header">
+        <span class="console-title">📋 执行日志</span>
+        <button class="console-clear" onclick="clearConsole()">清空日志</button>
+      </div>
+      <div class="console-body" id="consoleBody">
+        <div class="console-line info">[系统] 数据接入控制台已就绪，等待操作...</div>
+      </div>
+    </div>
+
+    <!-- 数据处理入库按钮 -->
+    <div class="process-section" id="processSection" style="display:none;">
+      <button class="btn btn-process" id="btnViewData" onclick="switchMode('scrape')">
+        📊 查看数据看板
+      </button>
+    </div>
+  </div>
+</div><!-- /modeIngest -->
 
 <!-- ═══ 自定义数据大屏模式 ═══ -->
 <div class="mode-section" id="modeCustom">
@@ -588,7 +742,7 @@ function drawComments() {
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   if (products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-dim)">暂无数据，请先爬取</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-dim)">暂无数据，请先采集数据</td></tr>';
     return;
   }
   const show = products.slice(0, 50);
@@ -606,7 +760,7 @@ function renderTable() {
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// ─── 爬取控制 ────────────────────────────────────────────
+// ─── 数据采集控制 ────────────────────────────────────────
 async function startScrape() {
   const count = parseInt(document.getElementById('countInput').value) || 30;
   const url = document.getElementById('urlInput').value.trim();
@@ -666,11 +820,116 @@ function switchMode(mode) {
   if (mode === 'scrape') {
     document.querySelector('.tab-nav-btn:nth-child(1)').classList.add('active');
     document.getElementById('modeScrape').classList.add('active');
-  } else {
+  } else if (mode === 'ingest') {
     document.querySelector('.tab-nav-btn:nth-child(2)').classList.add('active');
+    document.getElementById('modeIngest').classList.add('active');
+  } else {
+    document.querySelector('.tab-nav-btn:nth-child(3)').classList.add('active');
     document.getElementById('modeCustom').classList.add('active');
   }
   setTimeout(() => Object.values(charts).forEach(c => c?.resize?.()), 200);
+}
+
+// ─── 数据接入功能 ──────────────────────────────────────────
+let ingestRunning = false;
+let ingestPollingTimer = null;
+
+function getTimestamp() {
+  const now = new Date();
+  return now.toTimeString().slice(0, 8);
+}
+
+function consoleLog(msg, type = 'info') {
+  const body = document.getElementById('consoleBody');
+  const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌', process: '🔄' };
+  const line = document.createElement('div');
+  line.className = `console-line ${type}`;
+  line.innerHTML = `<span class="time">[${getTimestamp()}]</span><span class="icon">${icons[type] || ''}</span>${msg}`;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('consoleBody').innerHTML =
+    '<div class="console-line info"><span class="time">[' + getTimestamp() + ']</span><span class="icon">ℹ️</span>日志已清空，等待操作...</div>';
+}
+
+function updateProgress(current, total, title) {
+  const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = percent + '%';
+  document.getElementById('progressPercent').textContent = percent + '%';
+  if (title) document.getElementById('progressTitle').textContent = title;
+}
+
+async function startIngest() {
+  const count = parseInt(document.getElementById('ingestCount').value) || 30;
+  const url = document.getElementById('ingestUrl').value.trim();
+
+  consoleLog(`开始数据采集任务，目标数量: ${count}`, 'process');
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('processSection').style.display = 'none';
+  document.getElementById('btnIngestStart').disabled = true;
+  document.getElementById('btnIngestStop').disabled = false;
+
+  try {
+    const resp = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count, url })
+    });
+    const data = await resp.json();
+    if (data.error) {
+      consoleLog(data.error, 'error');
+      resetIngestUI();
+      return;
+    }
+    ingestRunning = true;
+    pollIngestStatus();
+  } catch (err) {
+    consoleLog('请求失败: ' + err.message, 'error');
+    resetIngestUI();
+  }
+}
+
+async function stopIngest() {
+  await fetch('/api/stop', { method: 'POST' });
+  consoleLog('已发送中止信号...', 'warning');
+}
+
+function resetIngestUI() {
+  ingestRunning = false;
+  document.getElementById('btnIngestStart').disabled = false;
+  document.getElementById('btnIngestStop').disabled = true;
+  if (ingestPollingTimer) clearTimeout(ingestPollingTimer);
+}
+
+async function pollIngestStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const s = await resp.json();
+
+    consoleLog(s.message, s.message.includes('出错') ? 'error' : 'process');
+    if (s.total > 0) {
+      updateProgress(s.current, s.total, `正在采集数据... ${s.current}/${s.total}`);
+    }
+
+    if (s.running) {
+      ingestPollingTimer = setTimeout(pollIngestStatus, 600);
+    } else {
+      consoleLog(`数据采集完成，共获取 ${s.current} 条数据`, 'success');
+      updateProgress(s.current, s.total, '采集完成');
+      resetIngestUI();
+      document.getElementById('processSection').style.display = 'block';
+    }
+  } catch (e) {
+    consoleLog('状态查询失败: ' + e.message, 'error');
+    resetIngestUI();
+  }
+}
+
+async function processData() {
+  // 此功能已集成到采集流程中
+  consoleLog('数据处理已在采集过程中自动完成', 'info');
 }
 
 // ─── 自定义数据渲染 ──────────────────────────────────────

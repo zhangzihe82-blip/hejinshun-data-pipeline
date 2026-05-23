@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 INIT_WAIT = 1.0
 PAGE_WAIT = 1.0
 LOGIN_TIMEOUT = 120
+PAGE_LOAD_TIMEOUT = 30
 
 if getattr(sys, 'frozen', False):
     _BASE = os.path.dirname(sys.executable)
@@ -24,27 +25,69 @@ PROFILE_DIR = os.path.join(_BASE, 'data', 'chrome_profile')
 
 def scrape_jd(count=50, url=None, stop_check=None, progress_callback=None, message_callback=None):
     """京东爬虫主入口"""
-    os.makedirs(PROFILE_DIR, exist_ok=True)
-
-    co = _create_options()
-    co.headless(False)
-    co.set_argument(f'--user-data-dir={PROFILE_DIR}')
-
-    page = _create_page(co)
+    page = None
     products = []
     seen_skus = set()
     page_num = 1
 
     try:
+        if message_callback:
+            message_callback('正在初始化浏览器...')
+
+        co = _create_options()
+        co.headless(False)
+
+        # 修复：使用临时目录避免配置文件冲突
+        import tempfile
+        temp_profile = tempfile.mkdtemp(prefix='jd_crawler_')
+        co.set_argument(f'--user-data-dir={temp_profile}')
+
+        page = _create_page(co)
+        page.set.load_mode.eager()  # 快速加载模式
+
         base_url = _clean_jd_url(url or 'https://search.jd.com/Search?keyword=手机')
 
-        # 加载首页
+        # 加载首页 - 添加超时
         page_url = _build_jd_page_url(base_url, page_num)
-        page.get(page_url)
+        if message_callback:
+            message_callback('正在访问京东...')
+
+        try:
+            page.get(page_url, timeout=PAGE_LOAD_TIMEOUT)
+        except Exception as e:
+            if message_callback:
+                message_callback(f'页面加载超时，尝试继续...')
+            logger.warning(f'页面加载超时: {e}')
+
         time.sleep(2)
 
-        # 检查登录
-        if 'passport.jd.com' in page.url:
+        # 检查是否被反爬虫拦截
+        current_url = page.url or ''
+        if 'risk_handler' in current_url or 'cfe.m.jd.com' in current_url:
+            if message_callback:
+                message_callback('检测到反爬虫机制，尝试绕过...')
+
+            # 等待几秒，让页面加载完成
+            time.sleep(3)
+
+            # 尝试直接访问原始URL
+            try:
+                page.get(page_url, timeout=PAGE_LOAD_TIMEOUT)
+                time.sleep(3)
+            except:
+                pass
+
+            # 如果还是被拦截，返回空
+            current_url = page.url or ''
+            if 'risk_handler' in current_url:
+                if message_callback:
+                    message_callback('无法绕过反爬虫，请尝试：1. 等待几分钟后重试 2. 使用代理 3. 手动登录')
+                logger.error('京东反爬虫拦截')
+                return []
+
+        # 检查登录 - 添加超时检测
+        current_url = page.url or ''
+        if 'passport.jd.com' in current_url:
             if message_callback:
                 message_callback('请在弹出的浏览器中登录京东账号（120秒内）')
             if not _wait_for_login(page, stop_check):
@@ -52,51 +95,110 @@ def scrape_jd(count=50, url=None, stop_check=None, progress_callback=None, messa
                     message_callback('登录超时，请重试')
                 return []
             if message_callback:
-                message_callback('登录成功，开始爬取...')
-            page.get(page_url)
+                message_callback('登录成功，开始采集...')
+            try:
+                page.get(page_url, timeout=PAGE_LOAD_TIMEOUT)
+            except Exception as e:
+                logger.warning(f'重新加载页面超时: {e}')
             time.sleep(2)
+
+        # 开始采集
+        if message_callback:
+            message_callback('开始采集商品数据...')
 
         # 翻页爬取
         while len(products) < count and page_num <= 10:
             if stop_check and stop_check():
                 break
 
-            page.wait.ele_displayed('css:[data-sku]', timeout=8)
-            time.sleep(0.3)
-
-            cards = page.eles('css:[data-sku]')
-            prev_count = len(products)
-
-            for card in cards:
-                if len(products) >= count:
-                    break
-                if stop_check and stop_check():
-                    break
+            try:
+                # 等待商品列表加载 - 添加超时
                 try:
-                    product = _extract_jd(card)
-                    sku = card.attr('data-sku') or ''
-                    if product and product['name'] and sku not in seen_skus:
-                        seen_skus.add(sku)
-                        products.append(product)
-                        if progress_callback:
-                            progress_callback(len(products), count)
-                except Exception:
+                    page.wait.ele_displayed('css:[data-sku]', timeout=10)
+                except Exception as e:
+                    logger.warning(f'等待商品列表超时: {e}')
+                    if message_callback:
+                        message_callback(f'当前页面未找到商品，尝试下一页...')
+                    page_num += 2
+                    if page_num <= 10:
+                        next_url = _build_jd_page_url(base_url, page_num)
+                        try:
+                            page.get(next_url, timeout=PAGE_LOAD_TIMEOUT)
+                        except Exception:
+                            pass
+                        time.sleep(PAGE_WAIT)
                     continue
 
-            if len(products) == prev_count:
-                break
+                time.sleep(0.3)
 
-            # 翻到下一页
-            page_num += 2
-            if len(products) < count:
-                next_url = _build_jd_page_url(base_url, page_num)
-                page.get(next_url)
-                time.sleep(PAGE_WAIT)
+                cards = page.eles('css:[data-sku]')
+                if not cards:
+                    logger.warning(f'未找到商品卡片')
+                    break
+
+                prev_count = len(products)
+
+                for card in cards:
+                    if len(products) >= count:
+                        break
+                    if stop_check and stop_check():
+                        break
+                    try:
+                        product = _extract_jd(card)
+                        sku = card.attr('data-sku') or ''
+                        if product and product['name'] and sku not in seen_skus:
+                            seen_skus.add(sku)
+                            products.append(product)
+                            if progress_callback:
+                                progress_callback(len(products), count)
+                            if message_callback and len(products) % 5 == 0:
+                                message_callback(f'已采集 {len(products)} 条数据')
+                    except Exception as e:
+                        logger.debug(f'提取商品失败: {e}')
+                        continue
+
+                if len(products) == prev_count:
+                    # 没有新数据，可能已经到底
+                    break
+
+                # 翻到下一页
+                page_num += 2
+                if len(products) < count:
+                    next_url = _build_jd_page_url(base_url, page_num)
+                    if message_callback:
+                        message_callback(f'正在访问第 {page_num} 页...')
+                    try:
+                        page.get(next_url, timeout=PAGE_LOAD_TIMEOUT)
+                    except Exception as e:
+                        logger.warning(f'翻页超时: {e}')
+                    time.sleep(PAGE_WAIT)
+
+            except Exception as e:
+                logger.error(f'页面操作出错: {e}')
+                if message_callback:
+                    message_callback(f'采集遇到错误，保存已获取数据')
+                break
 
         return products[:count]
 
+    except Exception as e:
+        logger.error(f'京东采集出错: {e}')
+        if message_callback:
+            message_callback(f'采集出错: {str(e)[:50]}')
+        return products
     finally:
-        page.quit()
+        if page:
+            try:
+                page.quit()
+            except Exception:
+                pass
+        # 清理临时目录
+        try:
+            import shutil
+            if 'temp_profile' in locals():
+                shutil.rmtree(temp_profile, ignore_errors=True)
+        except:
+            pass
 
 
 def _extract_jd(card):
@@ -229,6 +331,15 @@ def _create_options():
     co.set_argument('--disable-blink-features=AutomationControlled')
     co.set_argument('--disable-extensions')
     co.set_argument('--mute-audio')
+
+    # 反反爬 - 添加真实的浏览器特征
+    co.set_argument('--disable-web-security')
+    co.set_argument('--allow-running-insecure-content')
+    co.set_argument('--disable-features=IsolateOrigins,site-per-process')
+
+    # 添加真实的User-Agent
+    co.set_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
+
     return co
 
 

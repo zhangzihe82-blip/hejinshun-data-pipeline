@@ -15,14 +15,16 @@ SCROLL_WAIT = 0.5
 
 def scrape_smzdm(count=50, url=None, stop_check=None, progress_callback=None):
     """什么值得买爬虫主入口"""
-    co = _create_options()
-    co.headless(True)
-    page = _create_page(co)
+    page = None
     products = []
     seen_urls = set()
     stuck = 0
 
     try:
+        co = _create_options()
+        co.headless(True)
+        page = _create_page(co)
+
         target = url or 'https://faxian.smzdm.com/'
         page.get(target)
         page.wait.ele_displayed('css:.feed-row,.feed-block,li[articleid]', timeout=5)
@@ -31,29 +33,41 @@ def scrape_smzdm(count=50, url=None, stop_check=None, progress_callback=None):
         while len(products) < count and stuck < 5:
             if stop_check and stop_check():
                 break
-            cards = _find_cards_smzdm(page)
-            prev = len(products)
-            for card in cards:
-                if len(products) >= count:
-                    break
-                if stop_check and stop_check():
-                    break
-                try:
-                    product = _extract_smzdm(card)
-                    if product and product['name'] and product['product_url'] not in seen_urls:
-                        seen_urls.add(product['product_url'])
-                        products.append(product)
-                        if progress_callback:
-                            progress_callback(len(products), count)
-                except Exception:
-                    continue
-            stuck = 0 if len(products) > prev else stuck + 1
-            if len(products) < count:
-                page.scroll.to_bottom()
-                time.sleep(SCROLL_WAIT)
+            try:
+                cards = _find_cards_smzdm(page)
+                prev = len(products)
+                for card in cards:
+                    if len(products) >= count:
+                        break
+                    if stop_check and stop_check():
+                        break
+                    try:
+                        product = _extract_smzdm(card)
+                        if product and product['name'] and product['product_url'] not in seen_urls:
+                            seen_urls.add(product['product_url'])
+                            products.append(product)
+                            if progress_callback:
+                                progress_callback(len(products), count)
+                    except Exception:
+                        continue
+                stuck = 0 if len(products) > prev else stuck + 1
+                if len(products) < count:
+                    page.scroll.to_bottom()
+                    time.sleep(SCROLL_WAIT)
+            except Exception as e:
+                logger.warning(f'页面操作出错: {e}')
+                break
+
         return products[:count]
+    except Exception as e:
+        logger.error(f'什么值得买采集出错: {e}')
+        return products
     finally:
-        page.quit()
+        if page:
+            try:
+                page.quit()
+            except Exception:
+                pass
 
 
 def _find_cards_smzdm(page):
