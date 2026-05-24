@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电商数据可视化监控大屏</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<style>
+:root {
+  --bg-deep: #080e24;
+  --bg-panel: rgba(14, 24, 50, 0.85);
+  --border-glow: rgba(0, 168, 255, 0.15);
+  --accent: #00a8ff;
+  --cyan: #00e5ff;
+  --purple: #7c4dff;
+  --warn: #ff6e40;
+  --green: #00e676;
+  --gold: #ffd740;
+  --text: #d0d8e8;
+  --text-dim: #7a8ba0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 背景网格 */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,168,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,168,255,.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ─── 顶部 ─── */
+.header {
+  position: relative; z-index: 1;
+  text-align: center; padding: 22px 0 10px;
+  background: linear-gradient(180deg, rgba(10,20,45,.95) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border-glow);
+}
+.header h1 {
+  font-size: 32px; font-weight: 700; letter-spacing: 6px;
+  background: linear-gradient(90deg, var(--cyan), var(--accent), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header .subtitle { font-size: 13px; color: var(--text-dim); margin-top: 4px; letter-spacing: 2px; }
+
+/* ─── 统计卡片行 ─── */
+.stat-row {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+  padding: 16px 24px 0; max-width: 1600px; margin: 0 auto;
+}
+.stat-card {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 18px 20px; text-align: center;
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+.stat-card::after {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+}
+.stat-card:nth-child(1)::after { background: var(--accent); }
+.stat-card:nth-child(2)::after { background: var(--purple); }
+.stat-card:nth-child(3)::after { background: var(--warn); }
+.stat-card:nth-child(4)::after { background: var(--green); }
+.stat-card:nth-child(5)::after { background: var(--cyan); }
+.stat-card .label { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+.stat-card .value { font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+.stat-card:nth-child(1) .value { color: var(--accent); }
+.stat-card:nth-child(2) .value { color: var(--purple); }
+.stat-card:nth-child(3) .value { color: var(--warn); }
+.stat-card:nth-child(4) .value { color: var(--green); }
+.stat-card:nth-child(5) .value { color: var(--cyan); }
+.stat-card .unit { font-size: 13px; color: var(--text-dim); }
+
+/* ─── 主内容网格 ─── */
+.main-grid {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 1.2fr 1.8fr 1fr;
+  gap: 14px; padding: 14px 24px; max-width: 1600px; margin: 0 auto;
+}
+.panel {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 14px; backdrop-filter: blur(8px);
+}
+.panel h3 {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.06);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+}
+.panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.chart { width: 100%; height: 270px; }
+
+/* ─── 底部表格 ─── */
+.bottom-row {
+  position: relative; z-index: 1;
+  padding: 0 24px 20px; max-width: 1600px; margin: 0 auto;
+}
+.table-panel {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 14px; backdrop-filter: blur(8px);
+}
+.table-panel h3 { font-size: 14px; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.06); margin-bottom: 8px; }
+
+.table-scroll { max-height: 200px; overflow-y: auto; }
+.table-scroll::-webkit-scrollbar { width: 4px; }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th {
+  padding: 8px 10px; text-align: left; color: var(--accent);
+  border-bottom: 1px solid rgba(255,255,255,.08); font-weight: 500;
+  position: sticky; top: 0; background: rgba(14, 24, 50, .95);
+}
+tbody td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.03); }
+tbody tr:hover { background: rgba(0,168,255,.05); }
+.price-hl { color: var(--warn); font-weight: 600; }
+.platform-badge {
+  display: inline-block; padding: 1px 10px; border-radius: 10px;
+  font-size: 11px; background: rgba(0,168,255,.12); color: var(--accent);
+}
+
+/* ─── 控制栏 ─── */
+.control-bar {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 10px 24px; max-width: 1600px; margin: 0 auto;
+}
+.control-bar input[type="text"] {
+  width: 380px; padding: 7px 14px; border: 1px solid var(--border-glow);
+  border-radius: 6px; font-size: 13px; outline: none;
+  background: var(--bg-panel); color: var(--text);
+}
+.control-bar input[type="text"]:focus { border-color: var(--accent); }
+.control-bar input[type="number"] {
+  width: 80px; padding: 7px 10px; border: 1px solid var(--border-glow);
+  border-radius: 6px; font-size: 13px; text-align: center; outline: none;
+  background: var(--bg-panel); color: var(--text);
+}
+.control-bar input[type="number"]:focus { border-color: var(--accent); }
+.btn {
+  padding: 7px 18px; border: 1px solid var(--accent); border-radius: 6px;
+  cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s;
+  background: rgba(0,168,255,.1); color: var(--accent);
+}
+.btn:hover { background: var(--accent); color: #fff; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-danger { border-color: var(--warn); color: var(--warn); background: rgba(255,110,64,.1); }
+.btn-danger:hover { background: var(--warn); color: #fff; }
+
+.status-msg { font-size: 12px; color: var(--text-dim); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+.status-dot.idle { background: var(--green); }
+.status-dot.running { background: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Tab Nav */
+.tabs-nav { display: flex; gap: 4px; margin-top: 10px; justify-content: center; }
+.tab-nav-btn {
+  padding: 6px 20px; border: 1px solid var(--border-glow); border-radius: 6px;
+  cursor: pointer; font-size: 13px; color: var(--text-dim); background: transparent;
+  transition: all .2s;
+}
+.tab-nav-btn.active { background: rgba(0,168,255,.15); color: var(--accent); border-color: var(--accent); }
+.tab-nav-btn:hover { border-color: var(--accent); }
+
+/* Custom Data Panel */
+.custom-panel {
+  position: relative; z-index: 1; padding: 14px 24px; max-width: 1600px; margin: 0 auto;
+}
+.custom-input-row {
+  display: flex; gap: 10px; align-items: stretch;
+}
+.custom-input-row textarea {
+  flex: 1; height: 180px; background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; color: var(--cyan); font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+  font-size: 12px; padding: 14px; outline: none; resize: vertical;
+}
+.custom-input-row textarea:focus { border-color: var(--accent); }
+.custom-actions { display: flex; flex-direction: column; gap: 8px; }
+.custom-actions .btn { white-space: nowrap; }
+
+.custom-charts-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 14px;
+}
+@media (max-width: 1200px) { .custom-charts-grid { grid-template-columns: 1fr; } }
+
+/* Hidden sections */
+.mode-section { display: none; }
+.mode-section.active { display: block; }
+
+.no-data-hint { text-align: center; padding: 60px; color: var(--text-dim); font-size: 15px; }
+
+/* ─── 数据接入模块 ─── */
+.ingest-panel {
+  position: relative; z-index: 1;
+  padding: 20px 24px; max-width: 1200px; margin: 0 auto;
+}
+.ingest-control {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 18px; margin-bottom: 16px;
+}
+.ingest-input-row {
+  display: flex; gap: 12px; align-items: flex-end;
+}
+.ingest-input-row .input-group {
+  flex: 1; display: flex; flex-direction: column; gap: 6px;
+}
+.ingest-input-row label {
+  font-size: 12px; color: var(--text-dim); font-weight: 500;
+}
+.ingest-input-row input {
+  padding: 8px 12px; border: 1px solid var(--border-glow);
+  border-radius: 6px; font-size: 13px; outline: none;
+  background: rgba(0,0,0,.3); color: var(--text);
+}
+.ingest-input-row input:focus { border-color: var(--accent); }
+.btn-row { display: flex; gap: 8px; }
+
+/* 进度条 */
+.progress-section {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 16px 18px; margin-bottom: 16px;
+}
+.progress-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.progress-title { font-size: 13px; color: var(--text); }
+.progress-percent { font-size: 13px; color: var(--accent); font-weight: 600; }
+.progress-bar {
+  height: 8px; background: rgba(0,0,0,.4); border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 4px; transition: width 0.3s ease;
+}
+
+/* 瀑布流日志控制台 */
+.console-wrapper {
+  background: rgba(0,0,0,.5); border: 1px solid var(--border-glow);
+  border-radius: 8px; overflow: hidden;
+}
+.console-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: rgba(0,0,0,.3);
+  border-bottom: 1px solid var(--border-glow);
+}
+.console-title { font-size: 12px; color: var(--text-dim); }
+.console-clear {
+  padding: 4px 10px; border: 1px solid var(--border-glow);
+  border-radius: 4px; font-size: 11px; cursor: pointer;
+  background: transparent; color: var(--text-dim);
+  transition: all .2s;
+}
+.console-clear:hover { border-color: var(--accent); color: var(--accent); }
+.console-body {
+  height: 320px; overflow-y: auto; padding: 12px 14px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px; line-height: 1.7;
+}
+.console-body::-webkit-scrollbar { width: 6px; }
+.console-body::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+.console-body::-webkit-scrollbar-track { background: rgba(0,0,0,.2); }
+
+.console-line {
+  padding: 2px 0; animation: fadeIn .3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.console-line.info { color: var(--text-dim); }
+.console-line.success { color: var(--green); }
+.console-line.warning { color: var(--gold); }
+.console-line.error { color: var(--warn); }
+.console-line.process { color: var(--cyan); }
+.console-line .time { color: var(--text-dim); opacity: .6; margin-right: 6px; }
+.console-line .icon { margin-right: 4px; }
+
+/* 处理入库按钮 */
+.process-section {
+  text-align: center; margin-top: 16px;
+}
+.btn-process {
+  padding: 12px 36px; font-size: 14px; font-weight: 600;
+  border: 2px solid var(--green); color: var(--green);
+  background: rgba(0,230,118,.1); border-radius: 8px;
+  cursor: pointer; transition: all .2s;
+}
+.btn-process:hover { background: var(--green); color: #fff; }
+.btn-process:disabled { opacity: .4; cursor: not-allowed; }
+
+@media (max-width: 1200px) {
+  .main-grid { grid-template-columns: 1fr 1fr; }
+  .stat-row { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .control-bar { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部标题 -->
+<div class="header">
+  <h1>电商数据可视化监控大屏</h1>
+  <div class="subtitle">E-COMMERCE DATA VISUALIZATION DASHBOARD</div>
+  <div class="tabs-nav">
+    <button class="tab-nav-btn" onclick="switchMode('scrape')">数据看板</button>
+    <button class="tab-nav-btn active" onclick="switchMode('ingest')">数据接入</button>
+    <button class="tab-nav-btn" onclick="switchMode('custom')">自定义分析</button>
+  </div>
+</div>
+
+<!-- ═══ 数据看板模式 ═══ -->
+<div class="mode-section" id="modeScrape">
+
+<!-- 统计卡片 -->
+<div class="stat-row" id="statRow">
+  <div class="stat-card"><div class="label">商品总数</div><div class="value" id="stTotal">0</div><div class="unit">条</div></div>
+  <div class="stat-card"><div class="label">平均价格</div><div class="value" id="stAvg">¥0</div><div class="unit">元</div></div>
+  <div class="stat-card"><div class="label">最高价格</div><div class="value" id="stMax">¥0</div><div class="unit">元</div></div>
+  <div class="stat-card"><div class="label">最低价格</div><div class="value" id="stMin">¥0</div><div class="unit">元</div></div>
+  <div class="stat-card"><div class="label">覆盖平台</div><div class="value" id="stPlatforms">0</div><div class="unit">个</div></div>
+</div>
+
+<!-- 控制栏 -->
+<div class="control-bar">
+  <input type="text" id="urlInput" placeholder="粘贴数据源网址… 如 https://search.jd.com/Search?keyword=气球">
+  <input type="number" id="countInput" value="30" min="1" max="200" step="10">
+  <button class="btn" id="btnStart" onclick="startScrape()">开始采集</button>
+  <button class="btn btn-danger" id="btnStop" onclick="stopScrape()" disabled>中止采集</button>
+  <button class="btn" onclick="clearData()" style="border-color:var(--text-dim);color:var(--text-dim);background:transparent;">清空数据</button>
+  <span class="status-dot idle" id="statusDot"></span>
+  <span class="status-msg" id="statusMsg">就绪</span>
+  <span class="status-msg" id="progressLabel"></span>
+</div>
+
+<!-- 主图表区域 -->
+<div class="main-grid">
+  <!-- 左列 -->
+  <div>
+    <div class="panel" style="margin-bottom:14px;">
+      <h3><span class="dot" style="background:var(--cyan)"></span>平台商品占比</h3>
+      <div class="chart" id="chartPlatformPie"></div>
+    </div>
+    <div class="panel">
+      <h3><span class="dot" style="background:var(--purple)"></span>各平台平均价格</h3>
+      <div class="chart" id="chartPlatformAvg"></div>
+    </div>
+  </div>
+  <!-- 中列 -->
+  <div>
+    <div class="panel" style="margin-bottom:14px;">
+      <h3><span class="dot" style="background:var(--accent)"></span>商品价格分布</h3>
+      <div class="chart" id="chartPriceBar"></div>
+    </div>
+    <div class="panel">
+      <h3><span class="dot" style="background:var(--warn)"></span>商品价格区间占比</h3>
+      <div class="chart" id="chartPriceRange"></div>
+    </div>
+  </div>
+  <!-- 右列 -->
+  <div>
+    <div class="panel" style="margin-bottom:14px;">
+      <h3><span class="dot" style="background:var(--gold)"></span>商品价格 Top 10</h3>
+      <div class="chart" id="chartTopPrice"></div>
+    </div>
+    <div class="panel">
+      <h3><span class="dot" style="background:var(--green)"></span>销量/评论分布</h3>
+      <div class="chart" id="chartComments"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 底部滚动表格 -->
+<div class="bottom-row">
+  <div class="table-panel">
+    <h3>最新商品数据</h3>
+    <div class="table-scroll" id="tableScroll">
+      <table>
+        <thead>
+          <tr>
+            <th>商品名称</th><th style="width:90px">价格</th><th style="width:70px">原价</th>
+            <th style="width:85px">平台</th><th style="width:70px">评论数</th><th style="width:110px">采集时间</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-dim)">暂无数据，请先采集数据</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /modeScrape -->
+
+<!-- ═══ 数据接入模式 ═══ -->
+<div class="mode-section" id="modeIngest">
+  <div class="ingest-panel">
+    <!-- 控制区 -->
+    <div class="ingest-control">
+      <div class="ingest-input-row">
+        <div class="input-group">
+          <label>数据源地址</label>
+          <input type="text" id="ingestUrl" placeholder="粘贴数据源网址… 如 https://search.jd.com/Search?keyword=气球">
+        </div>
+        <div class="input-group" style="width:120px;">
+          <label>采集数量</label>
+          <input type="number" id="ingestCount" value="30" min="1" max="200" step="10">
+        </div>
+        <div class="input-group" style="width:auto;">
+          <label>&nbsp;</label>
+          <div class="btn-row">
+            <button class="btn" id="btnIngestStart" onclick="startIngest()">开始采集</button>
+            <button class="btn btn-danger" id="btnIngestStop" onclick="stopIngest()" disabled>中止</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 进度条 -->
+    <div class="progress-section" id="progressSection" style="display:none;">
+      <div class="progress-header">
+        <span class="progress-title" id="progressTitle">准备采集...</span>
+        <span class="progress-percent" id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+      </div>
+    </div>
+
+    <!-- 瀑布流日志控制台 -->
+    <div class="console-wrapper">
+      <div class="console-header">
+        <span class="console-title">📋 执行日志</span>
+        <button class="console-clear" onclick="clearConsole()">清空日志</button>
+      </div>
+      <div class="console-body" id="consoleBody">
+        <div class="console-line info"><span style="color:var(--cyan)">>>></span> <span style="color:var(--text-dim)"># 数据接入控制台已就绪</span></div>
+        <div class="console-line info"><span style="color:var(--cyan)">>>></span> <span style="color:var(--text-dim)"># 点击"开始采集"执行数据采集脚本</span></div>
+      </div>
+    </div>
+
+    <!-- 数据处理入库按钮 -->
+    <div class="process-section" id="processSection" style="display:none;">
+      <button class="btn btn-process" id="btnViewData" onclick="switchMode('scrape')">
+        📊 查看数据看板
+      </button>
+    </div>
+  </div>
+</div><!-- /modeIngest -->
+
+<!-- ═══ 自定义数据大屏模式 ═══ -->
+<div class="mode-section" id="modeCustom">
+  <div class="custom-panel">
+    <div class="custom-input-row">
+      <textarea id="customCodeInput" placeholder="在此粘贴代码生成器生成的 JSON 配置代码，然后点击「渲染图表」..."></textarea>
+      <div class="custom-actions">
+        <button class="btn" onclick="renderCustomCharts()">渲染图表</button>
+        <button class="btn" style="border-color:var(--text-dim);color:var(--text-dim);background:transparent;" onclick="document.getElementById('customCodeInput').value='';clearCustomCharts();">清空</button>
+        <span style="font-size:11px;color:var(--text-dim);text-align:center;">从代码生成器<br>复制代码后<br>粘贴到此处</span>
+      </div>
+    </div>
+    <div class="custom-charts-grid" id="customChartsGrid">
+      <div class="panel" style="text-align:center;padding:60px;color:var(--text-dim);">
+        请粘贴 JSON 配置代码并点击「渲染图表」
+      </div>
+    </div>
+  </div>
+</div><!-- /modeCustom -->
+
+<script>
+let products = [];
+let pollingTimer = null;
+let charts = {};
+let scrollTimer = null;
+let tableScrollIdx = 0;
+
+// ─── 初始化 ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  loadData();
+  setInterval(loadData, 30000); // 每30秒自动刷新
+  // 默认显示数据接入模式
+  switchMode('ingest');
+});
+
+window.addEventListener('resize', () => Object.values(charts).forEach(c => c?.resize?.()));
+
+function initCharts() {
+  charts.platformPie = echarts.init(document.getElementById('chartPlatformPie'));
+  charts.platformAvg = echarts.init(document.getElementById('chartPlatformAvg'));
+  charts.priceBar = echarts.init(document.getElementById('chartPriceBar'));
+  charts.priceRange = echarts.init(document.getElementById('chartPriceRange'));
+  charts.topPrice = echarts.init(document.getElementById('chartTopPrice'));
+  charts.comments = echarts.init(document.getElementById('chartComments'));
+}
+
+// ─── 数据加载 ────────────────────────────────────────────
+async function loadData() {
+  try {
+    const resp = await fetch('/api/products?order_by=created_at&order_dir=DESC');
+    products = await resp.json();
+    updateStatCards();
+    refreshAllCharts();
+    renderTable();
+  } catch (e) { console.error('加载失败', e); }
+}
+
+function updateStatCards() {
+  if (products.length === 0) {
+    document.getElementById('stTotal').textContent = '0';
+    document.getElementById('stAvg').textContent = '¥0';
+    document.getElementById('stMax').textContent = '¥0';
+    document.getElementById('stMin').textContent = '¥0';
+    document.getElementById('stPlatforms').textContent = '0';
+    return;
+  }
+  const prices = products.map(p => p.price).filter(p => p != null && p > 0);
+  const platforms = new Set(products.map(p => p.platform).filter(Boolean));
+  const avg = prices.reduce((a,b) => a+b, 0) / prices.length;
+  const max = Math.max(...prices);
+  const min = Math.min(...prices);
+
+  animateNumber('stTotal', products.length);
+  document.getElementById('stAvg').textContent = '¥' + avg.toFixed(1);
+  document.getElementById('stMax').textContent = '¥' + max.toFixed(0);
+  document.getElementById('stMin').textContent = '¥' + min.toFixed(0);
+  document.getElementById('stPlatforms').textContent = platforms.size;
+}
+
+function animateNumber(id, target) {
+  const el = document.getElementById(id);
+  const start = parseInt(el.textContent) || 0;
+  const duration = 600;
+  const startTime = performance.now();
+  function tick(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    el.textContent = Math.floor(start + (target - start) * p);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ─── 图表刷新 ────────────────────────────────────────────
+function refreshAllCharts() {
+  if (products.length === 0) {
+    Object.values(charts).forEach(c => c.setOption({
+      title: { text: '暂无数据', left: 'center', top: 'center',
+        textStyle: { color: '#7a8ba0', fontSize: 14 } }
+    }, true));
+    return;
+  }
+  drawPlatformPie();
+  drawPlatformAvg();
+  drawPriceBar();
+  drawPriceRange();
+  drawTopPrice();
+  drawComments();
+}
+
+const chartTextStyle = { color: '#7a8ba0', fontSize: 10 };
+const chartAxisLine = { lineStyle: { color: 'rgba(255,255,255,.08)' } };
+const chartSplitLine = { lineStyle: { color: 'rgba(255,255,255,.04)' } };
+
+function makeTooltip() {
+  return {
+    trigger: 'axis',
+    backgroundColor: 'rgba(14,24,50,.95)',
+    borderColor: 'rgba(0,168,255,.3)',
+    textStyle: { color: '#d0d8e8', fontSize: 11 }
+  };
+}
+
+// 1. 平台占比玫瑰图
+function drawPlatformPie() {
+  const map = {};
+  products.forEach(p => { const k = p.platform || '未知'; map[k] = (map[k]||0)+1; });
+  const data = Object.entries(map).map(([n,v]) => ({ name: n, value: v }));
+
+  charts.platformPie.setOption({
+    tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 } },
+    series: [{
+      type: 'pie', radius: ['40%', '70%'], center: ['50%','52%'],
+      roseType: 'area',
+      itemStyle: { borderRadius: 4, borderColor: 'rgba(0,0,0,.3)', borderWidth: 1 },
+      label: { color: '#7a8ba0', fontSize: 10 },
+      data,
+      color: ['#00a8ff','#7c4dff','#00e676','#ff6e40','#ffd740','#00e5ff']
+    }]
+  }, true);
+}
+
+// 2. 各平台均价柱状图
+function drawPlatformAvg() {
+  const map = {};
+  products.forEach(p => {
+    if (!p.platform || p.price == null || p.price <= 0) return;
+    if (!map[p.platform]) map[p.platform] = { sum: 0, cnt: 0 };
+    map[p.platform].sum += p.price;
+    map[p.platform].cnt += 1;
+  });
+  const entries = Object.entries(map).map(([k,v]) => ({ name: k, value: +(v.sum/v.cnt).toFixed(1) }));
+  entries.sort((a,b) => b.value - a.value);
+
+  charts.platformAvg.setOption({
+    tooltip: makeTooltip(),
+    xAxis: { type: 'category', data: entries.map(e => e.name), axisLabel: chartTextStyle, axisLine: chartAxisLine },
+    yAxis: { type: 'value', name: '均价(元)', nameTextStyle: chartTextStyle, axisLabel: chartTextStyle, splitLine: chartSplitLine },
+    series: [{
+      type: 'bar', data: entries.map(e => e.value), barMaxWidth: 32,
+      itemStyle: {
+        borderRadius: 3,
+        color: new echarts.graphic.LinearGradient(0,0,0,1,[
+          {offset:0,color:'#7c4dff'},{offset:1,color:'#00a8ff'}
+        ])
+      }
+    }],
+    grid: { left: 46, right: 10, top: 10, bottom: 28 }
+  }, true);
+}
+
+// 3. 价格分布柱状图
+function drawPriceBar() {
+  const prices = products.map(p => p.price).filter(p => p != null && p > 0);
+  if (!prices.length) return;
+  const min = Math.floor(Math.min(...prices) / 10) * 10;
+  const max = Math.ceil(Math.max(...prices) / 10) * 10;
+  const step = Math.max(Math.ceil((max - min) / 14), 1);
+  const buckets = [];
+  for (let i = min; i < max; i += step) buckets.push({ name: `${i}-${i+step}`, count: 0 });
+  if (buckets.length === 0) buckets.push({ name: `${min}-${max}`, count: 0 });
+  prices.forEach(p => {
+    for (let i = 0; i < buckets.length; i++) {
+      if (p >= min + i*step && p < min + (i+1)*step) { buckets[i].count++; break; }
+      if (i === buckets.length - 1) buckets[i].count++;
+    }
+  });
+
+  charts.priceBar.setOption({
+    tooltip: makeTooltip(),
+    xAxis: { type: 'category', data: buckets.map(b => b.name), axisLabel: { ...chartTextStyle, rotate: 25, fontSize: 9 }, axisLine: chartAxisLine },
+    yAxis: { type: 'value', name: '数量', nameTextStyle: chartTextStyle, axisLabel: chartTextStyle, splitLine: chartSplitLine, minInterval: 1 },
+    series: [{
+      type: 'bar', data: buckets.map(b => b.count), barMaxWidth: 28,
+      itemStyle: {
+        borderRadius: 3,
+        color: new echarts.graphic.LinearGradient(0,0,0,1,[
+          {offset:0,color:'#00e5ff'},{offset:1,color:'#00a8ff'}
+        ])
+      }
+    }],
+    grid: { left: 36, right: 10, top: 10, bottom: 38 }
+  }, true);
+}
+
+// 4. 价格区间环形图
+function drawPriceRange() {
+  const prices = products.map(p => p.price).filter(p => p != null && p > 0);
+  const ranges = [
+    { name: '0-50元', min: 0, max: 50 },
+    { name: '50-100元', min: 50, max: 100 },
+    { name: '100-200元', min: 100, max: 200 },
+    { name: '200-500元', min: 200, max: 500 },
+    { name: '500元以上', min: 500, max: Infinity }
+  ];
+  const data = ranges.map(r => ({
+    name: r.name,
+    value: prices.filter(p => p >= r.min && p < r.max).length
+  })).filter(d => d.value > 0);
+
+  charts.priceRange.setOption({
+    tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 } },
+    series: [{
+      type: 'pie', radius: ['50%', '75%'], center: ['50%','52%'],
+      data, label: { color: '#7a8ba0', fontSize: 10 },
+      itemStyle: { borderRadius: 3, borderColor: 'rgba(0,0,0,.3)', borderWidth: 1 },
+      color: ['#00e676','#00a8ff','#ffd740','#ff6e40','#7c4dff']
+    }]
+  }, true);
+}
+
+// 5. 价格 Top 10
+function drawTopPrice() {
+  const top = [...products].filter(p => p.price != null && p.price > 0)
+    .sort((a,b) => b.price - a.price).slice(0, 10).reverse();
+
+  charts.topPrice.setOption({
+    tooltip: { trigger: 'axis', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 }, formatter: p => `${p[0].name}<br/>¥${p[0].value}` },
+    xAxis: { type: 'value', name: '价格(元)', nameTextStyle: chartTextStyle, axisLabel: chartTextStyle, splitLine: chartSplitLine },
+    yAxis: { type: 'category', data: top.map(p => p.name.length > 16 ? p.name.slice(0,15)+'…' : p.name), axisLabel: { ...chartTextStyle, fontSize: 9 }, axisLine: chartAxisLine },
+    series: [{
+      type: 'bar', data: top.map(p => p.price), barMaxWidth: 16,
+      itemStyle: {
+        borderRadius: 2,
+        color: new echarts.graphic.LinearGradient(0,0,1,0,[
+          {offset:0,color:'#ff6e40'},{offset:1,color:'#ffd740'}
+        ])
+      },
+      label: { show: true, position: 'right', fontSize: 9, color: '#7a8ba0', formatter: p => '¥'+p.value }
+    }],
+    grid: { left: 130, right: 50, top: 5, bottom: 15 }
+  }, true);
+}
+
+// 6. 评论/销量分布
+function drawComments() {
+  const withComments = products.filter(p => p.comment_count != null && p.comment_count > 0);
+  if (!withComments.length) {
+    charts.comments.setOption({ title: { text: '暂无评论数据', left: 'center', top: 'center', textStyle: { color: '#7a8ba0', fontSize: 13 } } }, true);
+    return;
+  }
+  const sorted = [...withComments].sort((a,b) => b.comment_count - a.comment_count).slice(0, 10).reverse();
+
+  charts.comments.setOption({
+    tooltip: { trigger: 'axis', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 } },
+    xAxis: { type: 'value', name: '评论/销量', nameTextStyle: chartTextStyle, axisLabel: { ...chartTextStyle, formatter: v => v >= 10000 ? (v/10000).toFixed(1)+'万' : v }, splitLine: chartSplitLine },
+    yAxis: { type: 'category', data: sorted.map(p => p.name.length > 14 ? p.name.slice(0,13)+'…' : p.name), axisLabel: { ...chartTextStyle, fontSize: 9 }, axisLine: chartAxisLine },
+    series: [{
+      type: 'bar', data: sorted.map(p => p.comment_count), barMaxWidth: 16,
+      itemStyle: {
+        borderRadius: 2,
+        color: new echarts.graphic.LinearGradient(0,0,1,0,[
+          {offset:0,color:'#00e676'},{offset:1,color:'#00e5ff'}
+        ])
+      }
+    }],
+    grid: { left: 120, right: 15, top: 5, bottom: 15 }
+  }, true);
+}
+
+// ─── 表格渲染 ────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-dim)">暂无数据，请先采集数据</td></tr>';
+    return;
+  }
+  const show = products.slice(0, 50);
+  tbody.innerHTML = show.map(p => `
+    <tr>
+      <td title="${esc(p.name)}">${esc((p.name||'').slice(0,40))}${(p.name||'').length>40?'…':''}</td>
+      <td class="price-hl">${p.price != null ? '¥'+p.price.toFixed(2) : '-'}</td>
+      <td style="color:var(--text-dim)">${p.original_price != null ? '¥'+p.original_price.toFixed(2) : '-'}</td>
+      <td><span class="platform-badge">${esc(p.platform||'-')}</span></td>
+      <td style="color:var(--text-dim)">${p.comment_count ? p.comment_count.toLocaleString() : '-'}</td>
+      <td style="color:var(--text-dim);font-size:11px;">${(p.created_at||'').replace('T',' ').slice(0,19)}</td>
+    </tr>
+  `).join('');
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── 数据采集控制 ────────────────────────────────────────
+async function startScrape() {
+  const count = parseInt(document.getElementById('countInput').value) || 30;
+  const url = document.getElementById('urlInput').value.trim();
+  try {
+    const resp = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count, url })
+    });
+    const data = await resp.json();
+    if (data.error) { alert(data.error); return; }
+    setRunning(true);
+    pollStatus();
+  } catch (err) { alert('请求失败: ' + err.message); }
+}
+
+async function stopScrape() { await fetch('/api/stop', { method: 'POST' }); }
+
+async function clearData() {
+  if (!confirm('确定清空所有数据？')) return;
+  await fetch('/api/clear', { method: 'DELETE' });
+  products = [];
+  updateStatCards();
+  refreshAllCharts();
+  renderTable();
+}
+
+function setRunning(r) {
+  document.getElementById('btnStart').disabled = r;
+  document.getElementById('btnStop').disabled = !r;
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot ' + (r ? 'running' : 'idle');
+}
+
+async function pollStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const s = await resp.json();
+    document.getElementById('statusMsg').textContent = s.message;
+    if (s.total > 0) {
+      document.getElementById('progressLabel').textContent = s.current > 0 ? `${s.current}/${s.total}` : '';
+    }
+    if (s.running) {
+      pollingTimer = setTimeout(pollStatus, 800);
+    } else {
+      setRunning(false);
+      clearTimeout(pollingTimer);
+      await loadData();
+    }
+  } catch (e) { setRunning(false); }
+}
+
+// ─── 模式切换 ────────────────────────────────────────────
+function switchMode(mode) {
+  document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
+  if (mode === 'scrape') {
+    document.querySelector('.tab-nav-btn:nth-child(1)').classList.add('active');
+    document.getElementById('modeScrape').classList.add('active');
+  } else if (mode === 'ingest') {
+    document.querySelector('.tab-nav-btn:nth-child(2)').classList.add('active');
+    document.getElementById('modeIngest').classList.add('active');
+  } else {
+    document.querySelector('.tab-nav-btn:nth-child(3)').classList.add('active');
+    document.getElementById('modeCustom').classList.add('active');
+  }
+  setTimeout(() => Object.values(charts).forEach(c => c?.resize?.()), 200);
+}
+
+// ─── 数据接入功能 ──────────────────────────────────────────
+let ingestRunning = false;
+let ingestPollingTimer = null;
+
+function getTimestamp() {
+  const now = new Date();
+  return now.toTimeString().slice(0, 8);
+}
+
+function consoleLog(msg, type = 'info') {
+  const body = document.getElementById('consoleBody');
+  const line = document.createElement('div');
+  line.className = `console-line ${type}`;
+
+  // 代码风格的显示
+  let displayMsg = msg;
+
+  // Python代码风格高亮
+  if (msg.startsWith('>>> ')) {
+    // Python REPL 风格
+    const code = msg.slice(4);
+    // 语法高亮
+    let highlighted = code
+      .replace(/(#.*$)/gm, '<span style="color:var(--text-dim)">$1</span>')  // 注释
+      .replace(/(["'])(.*?)\1/g, '<span style="color:var(--green)">$1$2$1</span>')  // 字符串
+      .replace(/\b(import|from|as|def|return|if|else|for|in|while|break|continue|try|except|raise|with|class|lambda|yield|pass|True|False|None)\b/g, '<span style="color:var(--purple)">$1</span>')  // 关键字
+      .replace(/\b(\d+)\b/g, '<span style="color:var(--warn)">$1</span>');  // 数字
+
+    line.innerHTML = `<span style="color:var(--cyan)">>>></span> ${highlighted}`;
+  } else if (msg.startsWith('... ')) {
+    // 续行
+    line.innerHTML = `<span style="color:var(--text-dim)">...</span> ${msg.slice(4)}`;
+  } else {
+    // 普通输出
+    line.innerHTML = displayMsg;
+  }
+
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('consoleBody').innerHTML =
+    '<div class="console-line info"><span style="color:var(--cyan)">>>></span> <span style="color:var(--text-dim)"># 控制台已清空，等待操作...</div>';
+}
+
+function updateProgress(current, total, title) {
+  const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = percent + '%';
+  document.getElementById('progressPercent').textContent = percent + '%';
+  if (title) document.getElementById('progressTitle').textContent = title;
+}
+
+async function startIngest() {
+  const count = parseInt(document.getElementById('ingestCount').value) || 30;
+  const url = document.getElementById('ingestUrl').value.trim();
+
+  consoleLog(`开始数据采集任务，目标数量: ${count}`, 'process');
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('processSection').style.display = 'none';
+  document.getElementById('btnIngestStart').disabled = true;
+  document.getElementById('btnIngestStop').disabled = false;
+
+  try {
+    const resp = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count, url })
+    });
+    const data = await resp.json();
+    if (data.error) {
+      consoleLog(data.error, 'error');
+      resetIngestUI();
+      return;
+    }
+    ingestRunning = true;
+    pollIngestStatus();
+  } catch (err) {
+    consoleLog('请求失败: ' + err.message, 'error');
+    resetIngestUI();
+  }
+}
+
+async function stopIngest() {
+  await fetch('/api/stop', { method: 'POST' });
+  consoleLog('已发送中止信号...', 'warning');
+}
+
+function resetIngestUI() {
+  ingestRunning = false;
+  document.getElementById('btnIngestStart').disabled = false;
+  document.getElementById('btnIngestStop').disabled = true;
+  if (ingestPollingTimer) clearTimeout(ingestPollingTimer);
+}
+
+async function pollIngestStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const s = await resp.json();
+
+    // 直接显示消息（已经是代码格式）
+    consoleLog(s.message);
+
+    if (s.total > 0) {
+      updateProgress(s.current, s.total, `正在采集数据... ${s.current}/${s.total}`);
+    }
+
+    if (s.running) {
+      ingestPollingTimer = setTimeout(pollIngestStatus, 300);
+    } else {
+      updateProgress(s.current, s.total, '采集完成');
+      resetIngestUI();
+      document.getElementById('processSection').style.display = 'block';
+      // 刷新数据看板
+      await loadData();
+    }
+  } catch (e) {
+    consoleLog('>>> # 状态查询失败: ' + e.message);
+    resetIngestUI();
+  }
+}
+
+async function processData() {
+  // 此功能已集成到采集流程中
+  consoleLog('数据处理已在采集过程中自动完成', 'info');
+}
+
+// ─── 自定义数据渲染 ──────────────────────────────────────
+let customCharts = [];
+
+function clearCustomCharts() {
+  customCharts.forEach(c => c.dispose());
+  customCharts = [];
+  document.getElementById('customChartsGrid').innerHTML =
+    '<div class="panel" style="text-align:center;padding:60px;color:var(--text-dim);">请粘贴 JSON 配置代码并点击「渲染图表」</div>';
+}
+
+function renderCustomCharts() {
+  clearCustomCharts();
+  const raw = document.getElementById('customCodeInput').value.trim();
+  if (!raw) return;
+
+  let config;
+  try { config = JSON.parse(raw); } catch (e) {
+    document.getElementById('customChartsGrid').innerHTML =
+      '<div class="panel" style="text-align:center;padding:40px;color:var(--warn);">JSON 解析失败: ' + e.message + '</div>';
+    return;
+  }
+
+  if (!config.charts || !config.charts.length) {
+    document.getElementById('customChartsGrid').innerHTML =
+      '<div class="panel" style="text-align:center;padding:40px;color:var(--text-dim);">配置中没有图表数据</div>';
+    return;
+  }
+
+  const grid = document.getElementById('customChartsGrid');
+  grid.innerHTML = '';
+
+  config.charts.forEach((chartCfg, idx) => {
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = '<h3><span class="dot" style="background:var(--accent)"></span>' + esc(chartCfg.title || '图表' + (idx+1)) + '</h3><div class="chart" id="custom_' + idx + '" style="height:320px;"></div>';
+    grid.appendChild(panel);
+  });
+
+  // 延迟渲染，等 DOM 就绪
+  setTimeout(() => {
+    config.charts.forEach((chartCfg, idx) => {
+      const dom = document.getElementById('custom_' + idx);
+      if (!dom) return;
+      const instance = echarts.init(dom);
+      customCharts.push(instance);
+
+      let option = {
+        tooltip: { trigger: 'axis', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 } },
+        grid: { left: 50, right: 20, top: 20, bottom: 30 }
+      };
+
+      switch (chartCfg.type) {
+        case 'pie':
+        case 'donut':
+          option = {
+            tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8' } },
+            series: [{
+              type: 'pie',
+              radius: chartCfg.type === 'donut' ? ['40%', '70%'] : ['30%', '65%'],
+              center: ['50%', '52%'],
+              data: chartCfg.data,
+              label: { color: '#7a8ba0', fontSize: 10 },
+              itemStyle: { borderRadius: 3, borderColor: 'rgba(0,0,0,.3)', borderWidth: 1 },
+              color: ['#00a8ff','#7c4dff','#00e676','#ff6e40','#ffd740','#00e5ff','#e040fb','#40c4ff','#ff4081']
+            }]
+          };
+          break;
+
+        case 'funnel':
+          option = {
+            tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8' } },
+            series: [{
+              type: 'funnel', left: '15%', right: '15%', top: 20, bottom: 20,
+              sort: 'descending', gap: 3,
+              data: chartCfg.data,
+              label: { color: '#d0d8e8', fontSize: 10 },
+              itemStyle: { borderColor: 'rgba(0,0,0,.3)', borderWidth: 1 },
+              color: ['#00a8ff','#7c4dff','#00e676','#ff6e40','#ffd740','#00e5ff']
+            }]
+          };
+          break;
+
+        case 'bar':
+          option = {
+            tooltip: { trigger: 'axis', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8' } },
+            xAxis: { type: 'category', data: chartCfg.data.map(d => d.name), axisLabel: { color: '#7a8ba0', fontSize: 9, rotate: 20 }, axisLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } } },
+            yAxis: { type: 'value', name: chartCfg.yAxis || '', nameTextStyle: { color: '#7a8ba0', fontSize: 10 }, axisLabel: { color: '#7a8ba0', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.04)' } } },
+            series: [{
+              type: 'bar', data: chartCfg.data.map(d => d.value), barMaxWidth: 36,
+              itemStyle: { borderRadius: 3, color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#00e5ff'},{offset:1,color:'#00a8ff'}]) }
+            }],
+            grid: { left: 55, right: 15, top: 20, bottom: 40 }
+          };
+          break;
+
+        case 'scatter':
+          const maxSize = Math.max(...chartCfg.data.map(d => d.value[2] || 10));
+          option = {
+            tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8' }, formatter: p => p.name + '<br/>' + (chartCfg.xAxis||'X') + ': ' + p.value[0] + '<br/>' + (chartCfg.yAxis||'Y') + ': ' + p.value[1] },
+            xAxis: { type: 'value', name: chartCfg.xAxis || 'X', nameTextStyle: { color: '#7a8ba0' }, axisLabel: { color: '#7a8ba0', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.04)' } } },
+            yAxis: { type: 'value', name: chartCfg.yAxis || 'Y', nameTextStyle: { color: '#7a8ba0' }, axisLabel: { color: '#7a8ba0', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.04)' } } },
+            series: [{
+              type: 'scatter', data: chartCfg.data,
+              symbolSize: d => Math.max(8, (d[2] || 10) / maxSize * 50),
+              itemStyle: { color: '#4fc3f7', opacity: .7 }
+            }],
+            grid: { left: 60, right: 20, top: 20, bottom: 40 }
+          };
+          break;
+
+        case 'wordCloud':
+          option = {
+            tooltip: { show: false },
+            series: [{
+              type: 'wordCloud',
+              shape: 'circle',
+              sizeRange: [14, 48],
+              rotationRange: [-30, 30],
+              gridSize: 8,
+              drawOutOfBound: false,
+              textStyle: {
+                color: () => ['#00a8ff','#7c4dff','#00e676','#ff6e40','#ffd740','#00e5ff','#e040fb','#40c4ff'][Math.floor(Math.random()*8)],
+                fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif'
+              },
+              data: chartCfg.data
+            }]
+          };
+          break;
+
+        case 'radar':
+          const maxVal = Math.max(...(chartCfg.indicators || []).map(i => i.max || 5));
+          option = {
+            tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8' } },
+            radar: {
+              center: ['50%', '52%'],
+              radius: '60%',
+              indicator: chartCfg.indicators || [],
+              axisName: { color: '#7a8ba0', fontSize: 10 },
+              splitArea: { areaStyle: { color: ['rgba(0,168,255,.02)', 'rgba(0,168,255,.04)'] } },
+              splitLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } },
+              axisLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } }
+            },
+            series: [{
+              type: 'radar',
+              data: chartCfg.data || [],
+              areaStyle: { color: 'rgba(0,168,255,.15)' },
+              lineStyle: { color: '#00a8ff', width: 2 },
+              itemStyle: { color: '#00a8ff' },
+              symbol: 'circle', symbolSize: 4
+            }]
+          };
+          break;
+
+        case 'treemap':
+          option = {
+            tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8' } },
+            series: [{
+              type: 'treemap',
+              data: chartCfg.data,
+              label: { color: '#d0d8e8', fontSize: 10 },
+              itemStyle: { borderColor: 'rgba(0,0,0,.5)', borderWidth: 2 },
+              levels: [{ itemStyle: { borderColor: '#555' }, upperLabel: { show: true, height: 25 } }],
+              color: ['#00a8ff','#7c4dff','#00e676','#ff6e40','#ffd740','#00e5ff','#e040fb','#40c4ff','#ff4081']
+            }]
+          };
+          break;
+
+        default:
+          option = {
+            title: { text: '未知图表类型: ' + chartCfg.type, left: 'center', top: 'center', textStyle: { color: '#7a8ba0', fontSize: 14 } }
+          };
+      }
+
+      instance.setOption(option, true);
+    });
+  }, 150);
+}
+
+</script>
+</body>
+</html>
