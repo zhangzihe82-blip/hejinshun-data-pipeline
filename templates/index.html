@@ -195,7 +195,7 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
 }
 @media (max-width: 1200px) { .custom-charts-grid { grid-template-columns: 1fr; } }
 
-/* Hidden sections */
+/* Hidden sections - 关键修复：默认隐藏，有active类才显示 */
 .mode-section { display: none; }
 .mode-section.active { display: block; }
 
@@ -247,44 +247,131 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
   border-radius: 4px; transition: width 0.3s ease;
 }
 
-/* 瀑布流日志控制台 */
-.console-wrapper {
-  background: rgba(0,0,0,.5); border: 1px solid var(--border-glow);
-  border-radius: 8px; overflow: hidden;
+/* ═══ 终端风格瀑布流控制台 ═══ */
+.terminal-wrapper {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
 }
-.console-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 14px; background: rgba(0,0,0,.3);
-  border-bottom: 1px solid var(--border-glow);
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
 }
-.console-title { font-size: 12px; color: var(--text-dim); }
-.console-clear {
-  padding: 4px 10px; border: 1px solid var(--border-glow);
-  border-radius: 4px; font-size: 11px; cursor: pointer;
-  background: transparent; color: var(--text-dim);
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.terminal-dot.red { background: #ff5f56; }
+.terminal-dot.yellow { background: #ffbd2e; }
+.terminal-dot.green { background: #27c93f; }
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: #8b949e;
+}
+.terminal-clear {
+  padding: 4px 10px;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  background: transparent;
+  color: #8b949e;
   transition: all .2s;
 }
-.console-clear:hover { border-color: var(--accent); color: var(--accent); }
-.console-body {
-  height: 320px; overflow-y: auto; padding: 12px 14px;
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-  font-size: 12px; line-height: 1.7;
-}
-.console-body::-webkit-scrollbar { width: 6px; }
-.console-body::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-.console-body::-webkit-scrollbar-track { background: rgba(0,0,0,.2); }
+.terminal-clear:hover { border-color: var(--accent); color: var(--accent); }
 
-.console-line {
-  padding: 2px 0; animation: fadeIn .3s ease;
+.terminal-body {
+  height: 380px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  background: #0d1117;
 }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-.console-line.info { color: var(--text-dim); }
-.console-line.success { color: var(--green); }
-.console-line.warning { color: var(--gold); }
-.console-line.error { color: var(--warn); }
-.console-line.process { color: var(--cyan); }
-.console-line .time { color: var(--text-dim); opacity: .6; margin-right: 6px; }
-.console-line .icon { margin-right: 4px; }
+.terminal-body::-webkit-scrollbar { width: 8px; }
+.terminal-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+.terminal-body::-webkit-scrollbar-track { background: #0d1117; }
+
+/* 终端行样式 */
+.terminal-line {
+  display: flex;
+  align-items: flex-start;
+  padding: 3px 0;
+  animation: terminalFadeIn .2s ease;
+}
+@keyframes terminalFadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.terminal-prompt {
+  color: #58a6ff;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.terminal-prompt::before {
+  content: '$ ';
+  color: #3fb950;
+}
+
+.terminal-time {
+  color: #484f58;
+  font-size: 11px;
+  margin-right: 10px;
+  min-width: 70px;
+}
+
+.terminal-content {
+  flex: 1;
+  word-break: break-all;
+}
+
+/* 消息类型样式 */
+.terminal-line.info .terminal-content { color: #8b949e; }
+.terminal-line.success .terminal-content { color: #3fb950; }
+.terminal-line.warning .terminal-content { color: #d29922; }
+.terminal-line.error .terminal-content { color: #f85149; }
+.terminal-line.process .terminal-content { color: #58a6ff; }
+.terminal-line.system .terminal-content { color: #a371f7; font-style: italic; }
+
+/* 代码块高亮 */
+.terminal-line .keyword { color: #ff7b72; }
+.terminal-line .string { color: #a5d6ff; }
+.terminal-line .number { color: #79c0ff; }
+.terminal-line .function { color: #d2a8ff; }
+.terminal-line .comment { color: #8b949e; font-style: italic; }
+
+/* 加载动画 */
+.terminal-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.terminal-loading::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border: 2px solid #58a6ff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: terminalSpin 0.8s linear infinite;
+}
+@keyframes terminalSpin {
+  to { transform: rotate(360deg); }
+}
 
 /* 处理入库按钮 */
 .process-section {
@@ -317,9 +404,9 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
   <h1>电商数据可视化监控大屏</h1>
   <div class="subtitle">E-COMMERCE DATA VISUALIZATION DASHBOARD</div>
   <div class="tabs-nav">
-    <button class="tab-nav-btn" onclick="switchMode('scrape')">数据看板</button>
-    <button class="tab-nav-btn active" onclick="switchMode('ingest')">数据接入</button>
-    <button class="tab-nav-btn" onclick="switchMode('custom')">自定义分析</button>
+    <button class="tab-nav-btn" data-mode="scrape">数据看板</button>
+    <button class="tab-nav-btn" data-mode="ingest">数据接入</button>
+    <button class="tab-nav-btn" data-mode="custom">自定义分析</button>
   </div>
 </div>
 
@@ -441,21 +528,29 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
       </div>
     </div>
 
-    <!-- 瀑布流日志控制台 -->
-    <div class="console-wrapper">
-      <div class="console-header">
-        <span class="console-title">📋 执行日志</span>
-        <button class="console-clear" onclick="clearConsole()">清空日志</button>
+    <!-- 终端风格瀑布流控制台 -->
+    <div class="terminal-wrapper">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+        </div>
+        <span class="terminal-title">hejinshun-data-ingest ~ bash</span>
+        <button class="terminal-clear" onclick="clearTerminal()">清空</button>
       </div>
-      <div class="console-body" id="consoleBody">
-        <div class="console-line info">[系统] 数据接入控制台已就绪，等待操作...</div>
+      <div class="terminal-body" id="terminalBody">
+        <div class="terminal-line system">
+          <span class="terminal-time">00:00:00</span>
+          <span class="terminal-content">系统初始化完成，等待操作...</span>
+        </div>
       </div>
     </div>
 
     <!-- 数据处理入库按钮 -->
     <div class="process-section" id="processSection" style="display:none;">
       <button class="btn btn-process" id="btnViewData" onclick="switchMode('scrape')">
-        📊 查看数据看板
+        查看数据看板
       </button>
     </div>
   </div>
@@ -489,9 +584,19 @@ let tableScrollIdx = 0;
 
 // ─── 初始化 ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  initCharts();
-  loadData();
-  setInterval(loadData, 30000); // 每30秒自动刷新
+  // 先切换模式显示内容区域，再初始化图表
+  switchMode('ingest');
+  // 延迟初始化图表，确保DOM已显示
+  setTimeout(() => {
+    initCharts();
+    loadData();
+  }, 50);
+  setInterval(loadData, 30000);
+
+  // 绑定Tab点击事件
+  document.querySelectorAll('.tab-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
 });
 
 window.addEventListener('resize', () => Object.values(charts).forEach(c => c?.resize?.()));
@@ -527,9 +632,9 @@ function updateStatCards() {
   }
   const prices = products.map(p => p.price).filter(p => p != null && p > 0);
   const platforms = new Set(products.map(p => p.platform).filter(Boolean));
-  const avg = prices.reduce((a,b) => a+b, 0) / prices.length;
-  const max = Math.max(...prices);
-  const min = Math.min(...prices);
+  const avg = prices.length ? prices.reduce((a,b) => a+b, 0) / prices.length : 0;
+  const max = prices.length ? Math.max(...prices) : 0;
+  const min = prices.length ? Math.min(...prices) : 0;
 
   animateNumber('stTotal', products.length);
   document.getElementById('stAvg').textContent = '¥' + avg.toFixed(1);
@@ -815,22 +920,29 @@ async function pollStatus() {
 
 // ─── 模式切换 ────────────────────────────────────────────
 function switchMode(mode) {
+  // 移除所有active类
   document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
-  if (mode === 'scrape') {
-    document.querySelector('.tab-nav-btn:nth-child(1)').classList.add('active');
-    document.getElementById('modeScrape').classList.add('active');
-  } else if (mode === 'ingest') {
-    document.querySelector('.tab-nav-btn:nth-child(2)').classList.add('active');
-    document.getElementById('modeIngest').classList.add('active');
-  } else {
-    document.querySelector('.tab-nav-btn:nth-child(3)').classList.add('active');
-    document.getElementById('modeCustom').classList.add('active');
-  }
+
+  // 根据模式添加active类
+  const modeMap = {
+    'scrape': { btn: 0, section: 'modeScrape' },
+    'ingest': { btn: 1, section: 'modeIngest' },
+    'custom': { btn: 2, section: 'modeCustom' }
+  };
+
+  const config = modeMap[mode] || modeMap['ingest'];
+  const btns = document.querySelectorAll('.tab-nav-btn');
+  if (btns[config.btn]) btns[config.btn].classList.add('active');
+
+  const section = document.getElementById(config.section);
+  if (section) section.classList.add('active');
+
+  // 延迟resize图表
   setTimeout(() => Object.values(charts).forEach(c => c?.resize?.()), 200);
 }
 
-// ─── 数据接入功能 ──────────────────────────────────────────
+// ─── 终端风格日志系统 ──────────────────────────────────────────
 let ingestRunning = false;
 let ingestPollingTimer = null;
 
@@ -839,19 +951,54 @@ function getTimestamp() {
   return now.toTimeString().slice(0, 8);
 }
 
-function consoleLog(msg, type = 'info') {
-  const body = document.getElementById('consoleBody');
-  const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌', process: '🔄' };
+// 终端日志输出
+function terminalLog(msg, type = 'info') {
+  const body = document.getElementById('terminalBody');
   const line = document.createElement('div');
-  line.className = `console-line ${type}`;
-  line.innerHTML = `<span class="time">[${getTimestamp()}]</span><span class="icon">${icons[type] || ''}</span>${msg}`;
+  line.className = `terminal-line ${type}`;
+
+  const time = document.createElement('span');
+  time.className = 'terminal-time';
+  time.textContent = getTimestamp();
+
+  const content = document.createElement('span');
+  content.className = 'terminal-content';
+  content.innerHTML = formatTerminalMessage(msg, type);
+
+  line.appendChild(time);
+  line.appendChild(content);
   body.appendChild(line);
   body.scrollTop = body.scrollHeight;
 }
 
-function clearConsole() {
-  document.getElementById('consoleBody').innerHTML =
-    '<div class="console-line info"><span class="time">[' + getTimestamp() + ']</span><span class="icon">ℹ️</span>日志已清空，等待操作...</div>';
+// 格式化终端消息
+function formatTerminalMessage(msg, type) {
+  // 添加命令前缀
+  const prefixes = {
+    'info': '<span class="comment"># </span>',
+    'success': '<span class="string">[OK] </span>',
+    'warning': '<span class="keyword">[WARN] </span>',
+    'error': '<span class="keyword">[ERR] </span>',
+    'process': '<span class="function">[RUN] </span>',
+    'system': '<span class="comment">[SYS] </span>'
+  };
+
+  // 高亮处理
+  let formatted = msg
+    .replace(/(\d+)/g, '<span class="number">$1</span>')
+    .replace(/(https?:\/\/[^\s]+)/g, '<span class="string">$1</span>')
+    .replace(/(京东|什么值得买|淘宝)/g, '<span class="keyword">$1</span>');
+
+  return (prefixes[type] || '') + formatted;
+}
+
+function clearTerminal() {
+  const body = document.getElementById('terminalBody');
+  body.innerHTML = `
+    <div class="terminal-line system">
+      <span class="terminal-time">${getTimestamp()}</span>
+      <span class="terminal-content">终端已清空，等待操作...</span>
+    </div>`;
 }
 
 function updateProgress(current, total, title) {
@@ -865,13 +1012,17 @@ async function startIngest() {
   const count = parseInt(document.getElementById('ingestCount').value) || 30;
   const url = document.getElementById('ingestUrl').value.trim();
 
-  consoleLog(`开始数据采集任务，目标数量: ${count}`, 'process');
+  terminalLog(`初始化采集任务...`, 'system');
+  terminalLog(`目标数量: ${count}`, 'info');
+  if (url) terminalLog(`数据源: ${url}`, 'info');
+
   document.getElementById('progressSection').style.display = 'block';
   document.getElementById('processSection').style.display = 'none';
   document.getElementById('btnIngestStart').disabled = true;
   document.getElementById('btnIngestStop').disabled = false;
 
   try {
+    terminalLog(`发送采集请求...`, 'process');
     const resp = await fetch('/api/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -879,21 +1030,22 @@ async function startIngest() {
     });
     const data = await resp.json();
     if (data.error) {
-      consoleLog(data.error, 'error');
+      terminalLog(data.error, 'error');
       resetIngestUI();
       return;
     }
+    terminalLog(`采集任务已启动`, 'success');
     ingestRunning = true;
     pollIngestStatus();
   } catch (err) {
-    consoleLog('请求失败: ' + err.message, 'error');
+    terminalLog('请求失败: ' + err.message, 'error');
     resetIngestUI();
   }
 }
 
 async function stopIngest() {
   await fetch('/api/stop', { method: 'POST' });
-  consoleLog('已发送中止信号...', 'warning');
+  terminalLog('已发送中止信号...', 'warning');
 }
 
 function resetIngestUI() {
@@ -908,28 +1060,27 @@ async function pollIngestStatus() {
     const resp = await fetch('/api/status');
     const s = await resp.json();
 
-    consoleLog(s.message, s.message.includes('出错') ? 'error' : 'process');
+    // 解析消息类型
+    const msgType = s.message.includes('出错') ? 'error' :
+                    s.message.includes('完成') ? 'success' : 'process';
+    terminalLog(s.message, msgType);
+
     if (s.total > 0) {
-      updateProgress(s.current, s.total, `正在采集数据... ${s.current}/${s.total}`);
+      updateProgress(s.current, s.total, `采集进度: ${s.current}/${s.total}`);
     }
 
     if (s.running) {
       ingestPollingTimer = setTimeout(pollIngestStatus, 600);
     } else {
-      consoleLog(`数据采集完成，共获取 ${s.current} 条数据`, 'success');
+      terminalLog(`采集流程结束，共获取 ${s.current} 条数据`, s.current > 0 ? 'success' : 'warning');
       updateProgress(s.current, s.total, '采集完成');
       resetIngestUI();
       document.getElementById('processSection').style.display = 'block';
     }
   } catch (e) {
-    consoleLog('状态查询失败: ' + e.message, 'error');
+    terminalLog('状态查询失败: ' + e.message, 'error');
     resetIngestUI();
   }
-}
-
-async function processData() {
-  // 此功能已集成到采集流程中
-  consoleLog('数据处理已在采集过程中自动完成', 'info');
 }
 
 // ─── 自定义数据渲染 ──────────────────────────────────────
@@ -1062,7 +1213,6 @@ function renderCustomCharts() {
           break;
 
         case 'radar':
-          const maxVal = Math.max(...(chartCfg.indicators || []).map(i => i.max || 5));
           option = {
             tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8' } },
             radar: {

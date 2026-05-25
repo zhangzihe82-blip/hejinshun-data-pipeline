@@ -1,6 +1,12 @@
 """
 Excel处理子模块
 负责Excel文件的读写操作
+
+特性:
+- 自动创建数据目录
+- 支持.xlsx格式
+- 自动调整列宽
+- 数据完整性检查
 """
 import os
 import logging
@@ -15,11 +21,15 @@ from config import (
 
 logger = logging.getLogger(__name__)
 
+# 强制使用.xlsx格式
+EXCEL_EXTENSION = '.xlsx'
+
 
 def ensure_dirs():
     """确保数据目录存在"""
     os.makedirs(RAW_DIR, exist_ok=True)
     os.makedirs(CLEANED_DIR, exist_ok=True)
+    logger.debug(f"数据目录已就绪: raw={RAW_DIR}, cleaned={CLEANED_DIR}")
 
 
 # ─── 写入 ─────────────────────────────────────────────────────
