@@ -73,6 +73,8 @@ def create_dashboard_app():
             products.sort(key=lambda p: p.get('price', 0) or 0, reverse=True)
         elif order_by == 'name':
             products.sort(key=lambda p: p.get('name', ''))
+        elif order_by == 'created_at':
+            products.sort(key=lambda p: p.get('created_at', '') or p.get('scraped_at', ''), reverse=True)
         return jsonify(products)
 
     @app.route('/api/stats')
@@ -166,12 +168,40 @@ def create_dashboard_app():
         clear_products()
         return jsonify({'success': True, 'message': '数据已清空'})
 
+    @app.route('/shutdown', methods=['POST'])
+    def shutdown():
+        """关闭Flask服务器"""
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is not None:
+            func()
+        return jsonify({'success': True, 'message': '服务正在关闭'})
+
+    @app.route('/api/debug/paths')
+    def api_debug_paths():
+        """调试端点: 返回当前使用的路径配置（仅开发环境可用）"""
+        from config import BASE_DIR, DATA_DIR, CLEANED_DIR, IS_FROZEN
+        import os
+        # 生产环境禁用此端点
+        if IS_FROZEN:
+            return jsonify({'error': '此端点仅在开发环境可用'}), 403
+        data_file = os.path.join(CLEANED_DIR, 'products.xlsx')
+        return jsonify({
+            'is_frozen': IS_FROZEN,
+            'base_dir': BASE_DIR,
+            'data_dir': DATA_DIR,
+            'cleaned_dir': CLEANED_DIR,
+            'data_file': data_file,
+            'file_exists': os.path.exists(data_file),
+        })
+
     return app
 
 
-def run_dashboard(port=5001, open_browser=True):
+def run_dashboard(port=5001, open_browser=True, stop_event=None):
     """运行仪表盘应用"""
     from storage import ensure_dirs
+    import threading
+
     ensure_dirs()
 
     app = create_dashboard_app()
@@ -180,5 +210,17 @@ def run_dashboard(port=5001, open_browser=True):
 
     if open_browser:
         webbrowser.open(url)
+
+    # 如果有stop_event，启动一个监控线程，当事件触发时请求shutdown
+    if stop_event is not None:
+        def _watch_stop():
+            stop_event.wait()
+            try:
+                import urllib.request
+                urllib.request.urlopen(f'http://127.0.0.1:{port}/shutdown', timeout=2)
+            except Exception:
+                pass
+        watcher = threading.Thread(target=_watch_stop, daemon=True)
+        watcher.start()
 
     app.run(debug=False, host='127.0.0.1', port=port, threaded=True)

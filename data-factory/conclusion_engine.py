@@ -141,7 +141,12 @@ class ConclusionParser:
         elif '低于' in text or '落后' in text:
             conclusion.comparison = 'lower_than'
         elif '最' in text:
-            conclusion.comparison = 'highest' if '最' in text else None
+            if '最高' in text or '最多' in text or '最大' in text:
+                conclusion.comparison = 'highest'
+            elif '最低' in text or '最少' in text or '最小' in text:
+                conclusion.comparison = 'lowest'
+            else:
+                conclusion.comparison = 'highest'
 
         # 提取价格区间
         price_pattern = r'价格[区间]?[:：]?\s*(\d+)[~-](\d+)'
@@ -390,6 +395,20 @@ class ConclusionDrivenGenerator:
         self.parser = ConclusionParser()
         self.rule_generator = DataRuleGenerator()
 
+    def build_config(self, rules: Dict, conclusion: Conclusion, count: int = 1000, seed: int = None) -> Dict[str, Any]:
+        """构建完整的数据生成配置 (公共接口)
+
+        Args:
+            rules: 数据生成规则
+            conclusion: 解析后的结论
+            count: 数据量
+            seed: 随机种子
+
+        Returns:
+            完整的数据生成配置字典
+        """
+        return self._build_full_config(rules, conclusion, count, seed)
+
     def process(self, conclusion_text: str, count: int = 1000, seed: int = None) -> Tuple[Dict[str, Any], Conclusion]:
         """处理结论并生成数据规则
 
@@ -580,7 +599,7 @@ class ConclusionDrivenGenerator:
                 'platform': conclusion.platform,
                 'metric': conclusion.metric,
                 'direction': conclusion.direction.value if conclusion.direction else None,
-                'price_range': [conclusion.price_min, conclusion.price_max] if conclusion.price_min else None,
+                'price_range': [conclusion.price_min, conclusion.price_max] if conclusion.price_min is not None else None,
                 'age_range': [conclusion.demographic.age_min, conclusion.demographic.age_max],
                 'gender_ratio': {'male': conclusion.demographic.male_ratio, 'female': conclusion.demographic.female_ratio},
                 'confidence': conclusion.confidence

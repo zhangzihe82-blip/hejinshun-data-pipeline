@@ -9,7 +9,7 @@
 
 用法:
     python main.py              # 启动仪表盘 (port 5001)
-    python main.py --factory    # 启动数据制造工厂 (port 5002)
+    python main.py --factory    # 启动数据制造工厂 (port 5007)
     python main.py --generator  # 启动代码生成器 (port 5003)
     python main.py --help       # 显示帮助
 """
@@ -53,7 +53,7 @@ def parse_args():
         '-p', '--port',
         type=int,
         default=None,
-        help='指定服务端口 (默认: 仪表盘5001, 工厂5002, 生成器5003)'
+        help='指定服务端口 (默认: 仪表盘5001, 工厂5007, 生成器5003)'
     )
     parser.add_argument(
         '--no-browser',
@@ -65,19 +65,32 @@ def parse_args():
 
 def main():
     """主入口函数"""
+    import signal
+    import threading
+
     args = parse_args()
 
     # 确定端口
     if args.port:
         port = args.port
     elif args.factory:
-        port = 5002
+        port = 5007
     elif args.generator:
         port = 5003
     else:
         port = 5001
 
     open_browser = not args.no_browser
+    stop_event = threading.Event()
+
+    def _signal_handler(signum, frame):
+        logger.info('收到停止信号，正在关闭服务...')
+        stop_event.set()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    if hasattr(signal, 'SIGTERM'):
+        signal.signal(signal.SIGTERM, _signal_handler)
 
     if args.factory:
         # 启动数据制造工厂
@@ -88,17 +101,17 @@ def main():
         web_app = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(web_app)
         logger.info(f'启动数据制造工厂 on port {port}...')
-        web_app.run_app(port=port, open_browser=open_browser)
+        web_app.run_app(port=port, open_browser=open_browser, stop_event=stop_event)
     elif args.generator:
         # 启动代码生成器
         from web import run_generator
         logger.info(f'启动代码生成器 on port {port}...')
-        run_generator(port=port, open_browser=open_browser)
+        run_generator(port=port, open_browser=open_browser, stop_event=stop_event)
     else:
         # 启动数据仪表盘
         from web import run_dashboard
         logger.info(f'启动数据仪表盘 on port {port}...')
-        run_dashboard(port=port, open_browser=open_browser)
+        run_dashboard(port=port, open_browser=open_browser, stop_event=stop_event)
 
 
 if __name__ == '__main__':
@@ -107,6 +120,8 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         logger.info('服务已停止')
         sys.exit(0)
+    except SystemExit:
+        raise
     except Exception as e:
         logger.error(f'启动失败: {e}')
         sys.exit(1)

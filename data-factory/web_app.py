@@ -12,17 +12,30 @@ from datetime import datetime
 from pathlib import Path
 
 # 添加当前目录到Python路径
-BASE_DIR = Path(__file__).parent
-sys.path.insert(0, str(BASE_DIR))
+_MODULE_DIR = Path(__file__).parent
+sys.path.insert(0, str(_MODULE_DIR))
+
+# 数据目录基准: 打包后指向 exe 所在目录，开发时指向项目根目录
+if getattr(sys, 'frozen', False):
+    BASE_DIR = Path(sys.executable).parent
+else:
+    BASE_DIR = _MODULE_DIR.parent
 
 from flask import Flask, render_template, request, jsonify, send_file
 
 logger = logging.getLogger(__name__)
 
-# 创建Flask应用
+# 创建Flask应用 (模板/静态文件仍从模块目录加载)
+if getattr(sys, 'frozen', False):
+    _template_dir = Path(sys._MEIPASS) / 'data-factory' / 'templates'
+    _static_dir = Path(sys._MEIPASS) / 'data-factory' / 'static'
+else:
+    _template_dir = _MODULE_DIR / 'templates'
+    _static_dir = _MODULE_DIR / 'static'
+
 app = Flask(__name__,
-            template_folder=str(BASE_DIR / 'templates'),
-            static_folder=str(BASE_DIR / 'static'))
+            template_folder=str(_template_dir),
+            static_folder=str(_static_dir))
 
 # 全局状态
 _generate_status = {
@@ -37,20 +50,17 @@ _status_lock = threading.Lock()
 
 def reset_status():
     """重置生成状态"""
-    global _generate_status
     with _status_lock:
-        _generate_status = {
-            'running': False,
-            'total': 0,
-            'current': 0,
-            'message': '就绪',
-            'output_file': None
-        }
+        _generate_status['running'] = False
+        _generate_status['total'] = 0
+        _generate_status['current'] = 0
+        _generate_status['message'] = '就绪'
+        _generate_status['output_file'] = None
 
 
 def load_config(config_name='ecommerce'):
     """加载配置文件"""
-    config_path = BASE_DIR / 'config' / f'{config_name}.yaml'
+    config_path = _MODULE_DIR / 'config' / f'{config_name}.yaml'
     if config_path.exists():
         with open(config_path, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
@@ -93,6 +103,10 @@ def api_defaults():
 @app.route('/api/config/<name>')
 def api_config(name):
     """获取指定配置"""
+    import re
+    # 防止路径遍历攻击：只允许安全的文件名字符
+    if not re.match(r'^[a-zA-Z0-9_-]+$', name):
+        return jsonify({'error': '无效的配置名称'}), 400
     config = load_config(name)
     return jsonify(config)
 
@@ -238,7 +252,7 @@ def api_generate_structured():
 
             # 构建完整配置
             generator = ConclusionDrivenGenerator()
-            config = generator._build_full_config(rules, conclusion, count, seed)
+            config = generator.build_config(rules, conclusion, count, seed)
 
             with _status_lock:
                 _generate_status['message'] = '正在生成数据...'
@@ -432,8 +446,8 @@ def api_export():
         headers = list(rows[0])
         data_rows = rows[1:]
 
-        # 和金顺平台数据文件路径
-        hejinshun_path = BASE_DIR.parent / 'data' / 'cleaned' / 'products.xlsx'
+        # 和金顺平台数据文件路径 (BASE_DIR 已指向项目根目录/exe所在目录)
+        hejinshun_path = BASE_DIR / 'data' / 'cleaned' / 'products.xlsx'
         hejinshun_path.parent.mkdir(parents=True, exist_ok=True)
 
         # 如果目标文件存在，追加数据
@@ -472,15 +486,37 @@ def api_export():
         return jsonify({'error': f'导出失败: {str(e)}'}), 500
 
 
-def run_app(port=5002, open_browser=True):
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    """关闭Flask服务器"""
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is not None:
+        func()
+    return jsonify({'success': True, 'message': '服务正在关闭'})
+
+
+def run_app(port=5007, open_browser=True, stop_event=None):
     """运行应用"""
     import webbrowser
+    import threading
 
     url = f'http://127.0.0.1:{port}'
     logger.info(f'启动数据制造工厂: {url}')
 
     if open_browser:
         webbrowser.open(url)
+
+    # 如果有stop_event，启动一个监控线程，当事件触发时请求shutdown
+    if stop_event is not None:
+        def _watch_stop():
+            stop_event.wait()
+            try:
+                import urllib.request
+                urllib.request.urlopen(f'http://127.0.0.1:{port}/shutdown', timeout=2)
+            except Exception:
+                pass
+        watcher = threading.Thread(target=_watch_stop, daemon=True)
+        watcher.start()
 
     app.run(debug=False, host='127.0.0.1', port=port, threaded=True)
 

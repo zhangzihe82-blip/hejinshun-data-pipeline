@@ -34,4 +34,4 @@ def scrape(count=50, url=None, stop_check=None, progress_callback=None, message_
     if 'jd.com' in domain:
         return scrape_jd(count, url, stop_check, progress_callback, message_callback)
     else:
-        return scrape_smzdm(count, url, stop_check, progress_callback)
+        return scrape_smzdm(count, url, stop_check, progress_callback, message_callback)

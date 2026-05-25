@@ -13,14 +13,19 @@ INIT_WAIT = 1.0
 SCROLL_WAIT = 0.5
 
 
-def scrape_smzdm(count=50, url=None, stop_check=None, progress_callback=None):
+def scrape_smzdm(count=50, url=None, stop_check=None, progress_callback=None, message_callback=None):
     """什么值得买爬虫主入口"""
     page = None
     products = []
     seen_urls = set()
     stuck = 0
 
+    def _msg(msg):
+        if message_callback:
+            message_callback(msg)
+
     try:
+        _msg('📡 正在连接什么值得买...')
         co = _create_options()
         co.headless(True)
         page = _create_page(co)
@@ -30,8 +35,10 @@ def scrape_smzdm(count=50, url=None, stop_check=None, progress_callback=None):
         page.wait.ele_displayed('css:.feed-row,.feed-block,li[articleid]', timeout=5)
         time.sleep(INIT_WAIT)
 
+        _msg(f'🔄 开始采集数据，目标 {count} 条...')
         while len(products) < count and stuck < 5:
             if stop_check and stop_check():
+                _msg('⏹ 采集已停止')
                 break
             try:
                 cards = _find_cards_smzdm(page)
@@ -56,11 +63,14 @@ def scrape_smzdm(count=50, url=None, stop_check=None, progress_callback=None):
                     time.sleep(SCROLL_WAIT)
             except Exception as e:
                 logger.warning(f'页面操作出错: {e}')
+                _msg(f'⚠️ 页面操作出错: {e}')
                 break
 
+        _msg(f'✅ 采集完成，共获取 {len(products)} 条数据')
         return products[:count]
     except Exception as e:
         logger.error(f'什么值得买采集出错: {e}')
+        _msg(f'❌ 采集出错: {e}')
         return products
     finally:
         if page:
@@ -129,6 +139,7 @@ def _extract_smzdm(card):
     img = card.ele('css:img')
     data['image_url'] = (img.attr('src') or img.attr('data-src') or '') if img else ''
     data['category'] = '好价'
+    data['scraped_at'] = ''  # 由 data_cleaner 填充
     return data
 
 

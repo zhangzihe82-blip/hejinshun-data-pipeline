@@ -74,6 +74,14 @@ def create_generator_app():
         code = json.dumps(config, ensure_ascii=False, indent=2)
         return jsonify({'success': True, 'config': config, 'code': code, 'count': len(charts)})
 
+    @app.route('/shutdown', methods=['POST'])
+    def shutdown():
+        """关闭Flask服务器"""
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is not None:
+            func()
+        return jsonify({'success': True, 'message': '服务正在关闭'})
+
     return app
 
 
@@ -132,7 +140,7 @@ def _clean_num(v):
     """清洗数值"""
     try:
         return float(str(v).replace('%', '').replace(',', '').replace('¥', '').strip())
-    except:
+    except Exception:
         return 0
 
 
@@ -240,13 +248,27 @@ def _make_treemap(chart_id, title, headers, data_rows):
     }
 
 
-def run_generator(port=5002, open_browser=True):
+def run_generator(port=5002, open_browser=True, stop_event=None):
     """运行代码生成器应用"""
+    import threading
+
     app = create_generator_app()
     url = f'http://127.0.0.1:{port}'
     logger.info(f'代码生成器启动: {url}')
 
     if open_browser:
         webbrowser.open(url)
+
+    # 如果有stop_event，启动一个监控线程，当事件触发时请求shutdown
+    if stop_event is not None:
+        def _watch_stop():
+            stop_event.wait()
+            try:
+                import urllib.request
+                urllib.request.urlopen(f'http://127.0.0.1:{port}/shutdown', timeout=2)
+            except Exception:
+                pass
+        watcher = threading.Thread(target=_watch_stop, daemon=True)
+        watcher.start()
 
     app.run(debug=False, host='127.0.0.1', port=port, threaded=True)

@@ -35,7 +35,9 @@ def clean_record(record):
         cleaned["rating"] = float(cleaned["rating"]) if cleaned["rating"] not in (None, "") else None
     except (ValueError, TypeError):
         cleaned["rating"] = None
-    cleaned["scraped_at"] = datetime.now(timezone.utc).isoformat()
+    # 只在没有原始时间戳时才设置
+    if not cleaned.get("scraped_at"):
+        cleaned["scraped_at"] = datetime.now(timezone.utc).isoformat()
     if not cleaned.get("name"):
         return None
     return cleaned
@@ -49,16 +51,22 @@ def clean_records(records):
 def merge_data(existing, new_records, dedup_key="product_url"):
     """合并数据，按指定字段去重"""
     lookup = {}
+    counter = 0
     for rec in existing:
         key_val = rec.get(dedup_key, "")
         if key_val:
             lookup[key_val] = rec
+        else:
+            # 使用计数器作为后备键，避免使用不稳定的 id()
+            lookup[f"__no_key_{counter}"] = rec
+            counter += 1
     for rec in new_records:
         key_val = rec.get(dedup_key, "")
         if key_val and key_val in lookup:
             lookup[key_val] = rec
         else:
-            lookup[key_val or id(rec)] = rec
+            lookup[key_val or f"__no_key_{counter}"] = rec
+            counter += 1
     return list(lookup.values())
 
 
@@ -71,14 +79,13 @@ def get_stats(records):
     platforms = {}
     for r in records:
         p = r.get("platform") or "未知"
-        platforms.setdefault(p, {"sum": 0, "cnt": 0})
+        platforms.setdefault(p, {"sum": 0.0, "cnt": 0, "priced_cnt": 0})
         if r.get("price") and r["price"] > 0:
             platforms[p]["sum"] += r["price"]
-            platforms[p]["cnt"] += 1
-        else:
-            platforms[p]["cnt"] += 1
+            platforms[p]["priced_cnt"] += 1
+        platforms[p]["cnt"] += 1
     platform_stats = [
-        {"platform": k, "count": v["cnt"], "avg_price": round(v["sum"] / v["cnt"], 2) if v["cnt"] else 0}
+        {"platform": k, "count": v["cnt"], "avg_price": round(v["sum"] / v["priced_cnt"], 2) if v["priced_cnt"] else 0}
         for k, v in platforms.items()
     ]
     platform_stats.sort(key=lambda x: x["count"], reverse=True)

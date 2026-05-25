@@ -16,7 +16,7 @@ from openpyxl import Workbook, load_workbook
 
 from config import (
     RAW_DIR, CLEANED_DIR, PRODUCT_FIELDS,
-    get_excel_headers, get_field_keys,
+    get_excel_headers, get_field_keys, get_defaults,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,6 @@ def read_excel(filepath):
     if len(rows) < 1:
         return []
     headers = [str(h).strip() if h else "" for h in rows[0]]
-    from config import get_defaults
     records = []
     for row in rows[1:]:
         rec = get_defaults()
@@ -91,7 +90,6 @@ def read_excel(filepath):
             if header in header_to_key and i < len(row) and row[i] is not None:
                 rec[header_to_key[header]] = row[i]
         if rec.get("name") and str(rec["name"]).strip():
-            rec["created_at"] = rec.get("scraped_at", "")
             records.append(rec)
     logger.info("Read %d records from %s", len(records), filepath)
     return records
@@ -100,6 +98,7 @@ def read_excel(filepath):
 def read_cleaned(filename="products.xlsx"):
     """读取清洗后的数据"""
     filepath = os.path.join(CLEANED_DIR, filename)
+    logger.info("读取数据: %s, 存在: %s", filepath, os.path.exists(filepath))
     return read_excel(filepath)
 
 
