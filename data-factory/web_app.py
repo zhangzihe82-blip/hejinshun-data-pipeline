@@ -35,6 +35,19 @@ _generate_status = {
 _status_lock = threading.Lock()
 
 
+def reset_status():
+    """重置生成状态"""
+    global _generate_status
+    with _status_lock:
+        _generate_status = {
+            'running': False,
+            'total': 0,
+            'current': 0,
+            'message': '就绪',
+            'output_file': None
+        }
+
+
 def load_config(config_name='ecommerce'):
     """加载配置文件"""
     config_path = BASE_DIR / 'config' / f'{config_name}.yaml'
@@ -373,6 +386,13 @@ def api_status():
     """获取生成状态"""
     with _status_lock:
         return jsonify(dict(_generate_status))
+
+
+@app.route('/api/reset', methods=['POST'])
+def api_reset():
+    """重置生成状态"""
+    reset_status()
+    return jsonify({'success': True, 'message': '状态已重置'})
 
 
 @app.route('/api/download')
