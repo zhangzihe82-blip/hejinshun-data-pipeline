@@ -190,6 +190,7 @@ body::before {
           <label>目标品类</label>
           <select id="categorySelect">
             <option value="">全部品类 (均衡分布)</option>
+            <option value="漆器">漆器 (传统工艺)</option>
             <option value="手机">手机</option>
             <option value="电脑">电脑</option>
             <option value="家电">家电</option>
@@ -269,10 +270,11 @@ body::before {
         <div style="margin-bottom:12px;">
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">示例结论 (点击使用):</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="example-tag" onclick="useExample('漆器品类，价格100-500元，女性占比70%')">漆器首饰盒</span>
+            <span class="example-tag" onclick="useExample('漆器品类，价格500-2000元，年龄30-50岁')">漆器收藏品</span>
+            <span class="example-tag" onclick="useExample('漆器品类，手工雕刻，女性占比65%')">手工漆器</span>
             <span class="example-tag" onclick="useExample('手机品类价格呈上涨趋势，年龄18-35岁')">手机年轻用户</span>
             <span class="example-tag" onclick="useExample('美妆品类，女性占比80%，年龄25-40岁')">美妆女性</span>
-            <span class="example-tag" onclick="useExample('价格100-500元，年龄20-30岁，男性占比70%')">中价男性</span>
-            <span class="example-tag" onclick="useExample('京东自营评分明显高于普通京东')">自营高评分</span>
           </div>
         </div>
 

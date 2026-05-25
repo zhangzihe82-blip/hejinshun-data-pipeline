@@ -416,10 +416,14 @@ def api_export():
         hejinshun_path = BASE_DIR.parent / 'data' / 'cleaned' / 'products.xlsx'
         hejinshun_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # 如果目标文件存在，合并数据
+        # 如果目标文件存在，追加数据
         if hejinshun_path.exists():
-            target_wb = openpyxl.load_workbook(hejinshun_path, data_only=True)
+            # 不使用data_only，保留原有数据格式
+            target_wb = openpyxl.load_workbook(hejinshun_path)
             target_ws = target_wb.active
+
+            # 获取当前行数
+            original_count = target_ws.max_row - 1
 
             # 追加数据（跳过标题行）
             for row in data_rows:
@@ -427,11 +431,14 @@ def api_export():
 
             target_wb.save(hejinshun_path)
             total_count = target_ws.max_row - 1
+
+            logger.info(f"导出完成: 新增 {len(data_rows)} 条，原有 {original_count} 条，总计 {total_count} 条")
         else:
             # 直接复制文件
             import shutil
             shutil.copy(output_file, hejinshun_path)
             total_count = len(data_rows)
+            logger.info(f"创建新文件: 导出 {total_count} 条数据")
 
         return jsonify({
             'success': True,

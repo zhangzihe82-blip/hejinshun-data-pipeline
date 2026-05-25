@@ -63,6 +63,7 @@ class ConclusionParser:
 
     # 关键词映射
     CATEGORIES = {
+        '漆器': ['漆器', '漆艺', '大漆', '雕漆', '脱胎漆器', '推光漆器'],
         '手机': ['手机', '电话', '移动设备'],
         '电脑': ['电脑', '笔记本', '台式机', 'PC'],
         '家电': ['家电', '冰箱', '洗衣机', '空调', '电视'],
@@ -157,14 +158,14 @@ class ConclusionParser:
             conclusion.demographic.age_max = int(age_match.group(2))
 
         # 提取性别比例
-        female_pattern = r'女性[占比]?[:：]?\s*(\d+)%?'
+        female_pattern = r'女性(?:占比)?[:：]?\s*(\d+)%?'
         female_match = re.search(female_pattern, text)
         if female_match:
             ratio = float(female_match.group(1)) / 100
             conclusion.demographic.female_ratio = ratio
             conclusion.demographic.male_ratio = 1 - ratio
 
-        male_pattern = r'男性[占比]?[:：]?\s*(\d+)%?'
+        male_pattern = r'男性(?:占比)?[:：]?\s*(\d+)%?'
         male_match = re.search(male_pattern, text)
         if male_match:
             ratio = float(male_match.group(1)) / 100
@@ -305,6 +306,7 @@ class DataRuleGenerator:
         # 如果指定了品类，调整价格范围
         if conclusion.category:
             category_price_map = {
+                '漆器': {'mean': 6.0, 'min': 50, 'max': 50000},  # 漆器价格范围较广
                 '手机': {'mean': 7.5, 'min': 500, 'max': 15000},
                 '电脑': {'mean': 8.0, 'min': 1000, 'max': 30000},
                 '家电': {'mean': 6.5, 'min': 100, 'max': 10000},
@@ -459,7 +461,7 @@ class ConclusionDrivenGenerator:
             'category': {
                 'type': 'string',
                 'method': 'choice',
-                'choices': ['手机', '电脑', '家电', '服装', '食品', '图书', '美妆', '家居']
+                'choices': ['漆器', '手机', '电脑', '家电', '服装', '食品', '图书', '美妆', '家居']
             },
             # 新增: 用户画像字段
             'user_age': {
@@ -535,7 +537,7 @@ class ConclusionDrivenGenerator:
 
         # 如果结论指定了品类，调整品类分布
         if conclusion.category:
-            categories = ['手机', '电脑', '家电', '服装', '食品', '图书', '美妆', '家居']
+            categories = ['漆器', '手机', '电脑', '家电', '服装', '食品', '图书', '美妆', '家居']
             if conclusion.category in categories:
                 # 指定品类占60%，其余均匀分配40%
                 weights = [0.05] * len(categories)
