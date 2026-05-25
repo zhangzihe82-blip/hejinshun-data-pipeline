@@ -27,9 +27,14 @@ PRODUCT_FIELDS = [
     ("platform",       "Platform",        str,                   ""),
     ("rating",         "Rating",          (float, type(None)),   None),
     ("comment_count",  "Comment Count",   int,                   0),
+    ("category",       "Category",        str,                   ""),
+    # 用户画像字段
+    ("user_age",       "User Age",        (int, type(None)),     None),
+    ("user_gender",    "User Gender",     str,                   ""),
+    ("user_region",    "User Region",     str,                   ""),
+    # 链接字段
     ("image_url",      "Image URL",       str,                   ""),
     ("product_url",    "Product URL",     str,                   ""),
-    ("category",       "Category",        str,                   ""),
     ("scraped_at",     "Scraped At",      str,                   ""),
 ]
 

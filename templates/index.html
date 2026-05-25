@@ -417,8 +417,8 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
 <div class="stat-row" id="statRow">
   <div class="stat-card"><div class="label">商品总数</div><div class="value" id="stTotal">0</div><div class="unit">条</div></div>
   <div class="stat-card"><div class="label">平均价格</div><div class="value" id="stAvg">¥0</div><div class="unit">元</div></div>
-  <div class="stat-card"><div class="label">最高价格</div><div class="value" id="stMax">¥0</div><div class="unit">元</div></div>
-  <div class="stat-card"><div class="label">最低价格</div><div class="value" id="stMin">¥0</div><div class="unit">元</div></div>
+  <div class="stat-card"><div class="label">平均评分</div><div class="value" id="stRating">0</div><div class="unit">分</div></div>
+  <div class="stat-card"><div class="label">用户平均年龄</div><div class="value" id="stAge">-</div><div class="unit">岁</div></div>
   <div class="stat-card"><div class="label">覆盖平台</div><div class="value" id="stPlatforms">0</div><div class="unit">个</div></div>
 </div>
 
@@ -461,13 +461,21 @@ tbody tr:hover { background: rgba(0,168,255,.05); }
   <!-- 右列 -->
   <div>
     <div class="panel" style="margin-bottom:14px;">
-      <h3><span class="dot" style="background:var(--gold)"></span>商品价格 Top 10</h3>
-      <div class="chart" id="chartTopPrice"></div>
+      <h3><span class="dot" style="background:var(--gold)"></span>用户年龄分布</h3>
+      <div class="chart" id="chartAgeDist"></div>
     </div>
     <div class="panel">
-      <h3><span class="dot" style="background:var(--green)"></span>销量/评论分布</h3>
-      <div class="chart" id="chartComments"></div>
+      <h3><span class="dot" style="background:var(--green)"></span>用户性别比例</h3>
+      <div class="chart" id="chartGenderRatio"></div>
     </div>
+  </div>
+</div>
+
+<!-- 用户画像区域 -->
+<div class="stat-row" style="margin-top:14px;">
+  <div class="panel" style="padding:14px;">
+    <h3><span class="dot" style="background:var(--purple)"></span>用户地区分布</h3>
+    <div class="chart" id="chartRegionDist" style="height:200px;"></div>
   </div>
 </div>
 
@@ -606,8 +614,9 @@ function initCharts() {
   charts.platformAvg = echarts.init(document.getElementById('chartPlatformAvg'));
   charts.priceBar = echarts.init(document.getElementById('chartPriceBar'));
   charts.priceRange = echarts.init(document.getElementById('chartPriceRange'));
-  charts.topPrice = echarts.init(document.getElementById('chartTopPrice'));
-  charts.comments = echarts.init(document.getElementById('chartComments'));
+  charts.ageDist = echarts.init(document.getElementById('chartAgeDist'));
+  charts.genderRatio = echarts.init(document.getElementById('chartGenderRatio'));
+  charts.regionDist = echarts.init(document.getElementById('chartRegionDist'));
 }
 
 // ─── 数据加载 ────────────────────────────────────────────
@@ -625,21 +634,24 @@ function updateStatCards() {
   if (products.length === 0) {
     document.getElementById('stTotal').textContent = '0';
     document.getElementById('stAvg').textContent = '¥0';
-    document.getElementById('stMax').textContent = '¥0';
-    document.getElementById('stMin').textContent = '¥0';
+    document.getElementById('stRating').textContent = '-';
+    document.getElementById('stAge').textContent = '-';
     document.getElementById('stPlatforms').textContent = '0';
     return;
   }
   const prices = products.map(p => p.price).filter(p => p != null && p > 0);
+  const ratings = products.map(p => p.rating).filter(p => p != null && p > 0);
+  const ages = products.map(p => p.user_age).filter(p => p != null && p > 0);
   const platforms = new Set(products.map(p => p.platform).filter(Boolean));
+
   const avg = prices.length ? prices.reduce((a,b) => a+b, 0) / prices.length : 0;
-  const max = prices.length ? Math.max(...prices) : 0;
-  const min = prices.length ? Math.min(...prices) : 0;
+  const avgRating = ratings.length ? ratings.reduce((a,b) => a+b, 0) / ratings.length : 0;
+  const avgAge = ages.length ? ages.reduce((a,b) => a+b, 0) / ages.length : 0;
 
   animateNumber('stTotal', products.length);
   document.getElementById('stAvg').textContent = '¥' + avg.toFixed(1);
-  document.getElementById('stMax').textContent = '¥' + max.toFixed(0);
-  document.getElementById('stMin').textContent = '¥' + min.toFixed(0);
+  document.getElementById('stRating').textContent = avgRating.toFixed(1);
+  document.getElementById('stAge').textContent = avgAge > 0 ? avgAge.toFixed(0) : '-';
   document.getElementById('stPlatforms').textContent = platforms.size;
 }
 
@@ -669,8 +681,9 @@ function refreshAllCharts() {
   drawPlatformAvg();
   drawPriceBar();
   drawPriceRange();
-  drawTopPrice();
-  drawComments();
+  drawAgeDist();
+  drawGenderRatio();
+  drawRegionDist();
 }
 
 const chartTextStyle = { color: '#7a8ba0', fontSize: 10 };
@@ -794,52 +807,91 @@ function drawPriceRange() {
   }, true);
 }
 
-// 5. 价格 Top 10
-function drawTopPrice() {
-  const top = [...products].filter(p => p.price != null && p.price > 0)
-    .sort((a,b) => b.price - a.price).slice(0, 10).reverse();
+// 5. 用户年龄分布
+function drawAgeDist() {
+  const ages = products.map(p => p.user_age).filter(p => p != null && p > 0);
+  if (!ages.length) {
+    charts.ageDist.setOption({ title: { text: '暂无年龄数据', left: 'center', top: 'center', textStyle: { color: '#7a8ba0', fontSize: 13 } } }, true);
+    return;
+  }
 
-  charts.topPrice.setOption({
-    tooltip: { trigger: 'axis', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 }, formatter: p => `${p[0].name}<br/>¥${p[0].value}` },
-    xAxis: { type: 'value', name: '价格(元)', nameTextStyle: chartTextStyle, axisLabel: chartTextStyle, splitLine: chartSplitLine },
-    yAxis: { type: 'category', data: top.map(p => p.name.length > 16 ? p.name.slice(0,15)+'…' : p.name), axisLabel: { ...chartTextStyle, fontSize: 9 }, axisLine: chartAxisLine },
+  // 年龄分组
+  const ranges = [
+    { name: '18-25岁', min: 18, max: 25 },
+    { name: '26-35岁', min: 26, max: 35 },
+    { name: '36-45岁', min: 36, max: 45 },
+    { name: '46-55岁', min: 46, max: 55 },
+    { name: '55岁以上', min: 55, max: Infinity }
+  ];
+  const data = ranges.map(r => ({
+    name: r.name,
+    value: ages.filter(a => a >= r.min && a < r.max).length
+  })).filter(d => d.value > 0);
+
+  charts.ageDist.setOption({
+    tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 } },
     series: [{
-      type: 'bar', data: top.map(p => p.price), barMaxWidth: 16,
-      itemStyle: {
-        borderRadius: 2,
-        color: new echarts.graphic.LinearGradient(0,0,1,0,[
-          {offset:0,color:'#ff6e40'},{offset:1,color:'#ffd740'}
-        ])
-      },
-      label: { show: true, position: 'right', fontSize: 9, color: '#7a8ba0', formatter: p => '¥'+p.value }
-    }],
-    grid: { left: 130, right: 50, top: 5, bottom: 15 }
+      type: 'pie', radius: ['40%', '68%'], center: ['50%','52%'],
+      data, label: { color: '#7a8ba0', fontSize: 10 },
+      itemStyle: { borderRadius: 3, borderColor: 'rgba(0,0,0,.3)', borderWidth: 1 },
+      color: ['#ffd740','#00a8ff','#7c4dff','#00e676','#ff6e40']
+    }]
   }, true);
 }
 
-// 6. 评论/销量分布
-function drawComments() {
-  const withComments = products.filter(p => p.comment_count != null && p.comment_count > 0);
-  if (!withComments.length) {
-    charts.comments.setOption({ title: { text: '暂无评论数据', left: 'center', top: 'center', textStyle: { color: '#7a8ba0', fontSize: 13 } } }, true);
+// 6. 用户性别比例
+function drawGenderRatio() {
+  const genders = products.map(p => p.user_gender).filter(Boolean);
+  if (!genders.length) {
+    charts.genderRatio.setOption({ title: { text: '暂无性别数据', left: 'center', top: 'center', textStyle: { color: '#7a8ba0', fontSize: 13 } } }, true);
     return;
   }
-  const sorted = [...withComments].sort((a,b) => b.comment_count - a.comment_count).slice(0, 10).reverse();
 
-  charts.comments.setOption({
-    tooltip: { trigger: 'axis', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 } },
-    xAxis: { type: 'value', name: '评论/销量', nameTextStyle: chartTextStyle, axisLabel: { ...chartTextStyle, formatter: v => v >= 10000 ? (v/10000).toFixed(1)+'万' : v }, splitLine: chartSplitLine },
-    yAxis: { type: 'category', data: sorted.map(p => p.name.length > 14 ? p.name.slice(0,13)+'…' : p.name), axisLabel: { ...chartTextStyle, fontSize: 9 }, axisLine: chartAxisLine },
+  const male = genders.filter(g => g === '男').length;
+  const female = genders.filter(g => g === '女').length;
+
+  charts.genderRatio.setOption({
+    tooltip: { trigger: 'item', backgroundColor: 'rgba(14,24,50,.95)', borderColor: 'rgba(0,168,255,.3)', textStyle: { color: '#d0d8e8', fontSize: 11 } },
     series: [{
-      type: 'bar', data: sorted.map(p => p.comment_count), barMaxWidth: 16,
+      type: 'pie', radius: ['50%', '75%'], center: ['50%','52%'],
+      data: [
+        { name: '男性', value: male },
+        { name: '女性', value: female }
+      ],
+      label: { color: '#7a8ba0', fontSize: 11, formatter: '{b}\n{d}%' },
+      itemStyle: { borderRadius: 3, borderColor: 'rgba(0,0,0,.3)', borderWidth: 1 },
+      color: ['#00a8ff', '#7c4dff']
+    }]
+  }, true);
+}
+
+// 7. 用户地区分布
+function drawRegionDist() {
+  const regions = products.map(p => p.user_region).filter(Boolean);
+  if (!regions.length) {
+    charts.regionDist.setOption({ title: { text: '暂无地区数据', left: 'center', top: 'center', textStyle: { color: '#7a8ba0', fontSize: 13 } } }, true);
+    return;
+  }
+
+  const map = {};
+  regions.forEach(r => { map[r] = (map[r] || 0) + 1; });
+  const data = Object.entries(map).map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value).slice(0, 10);
+
+  charts.regionDist.setOption({
+    tooltip: makeTooltip(),
+    xAxis: { type: 'category', data: data.map(d => d.name), axisLabel: chartTextStyle, axisLine: chartAxisLine },
+    yAxis: { type: 'value', name: '人数', nameTextStyle: chartTextStyle, axisLabel: chartTextStyle, splitLine: chartSplitLine },
+    series: [{
+      type: 'bar', data: data.map(d => d.value), barMaxWidth: 28,
       itemStyle: {
-        borderRadius: 2,
-        color: new echarts.graphic.LinearGradient(0,0,1,0,[
-          {offset:0,color:'#00e676'},{offset:1,color:'#00e5ff'}
+        borderRadius: 3,
+        color: new echarts.graphic.LinearGradient(0,0,0,1,[
+          {offset:0,color:'#7c4dff'},{offset:1,color:'#00a8ff'}
         ])
       }
     }],
-    grid: { left: 120, right: 15, top: 5, bottom: 15 }
+    grid: { left: 46, right: 20, top: 10, bottom: 28 }
   }, true);
 }
 

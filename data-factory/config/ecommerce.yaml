@@ -1,0 +1,138 @@
+# 电商数据生成配置
+# 数据制造工厂 v1.0
+
+# 字段定义
+fields:
+  # 商品名称 - 模板组合生成
+  name:
+    type: string
+    method: template
+    template: "{brand} {category} {feature} {suffix}"
+    required: true
+
+  # 现价 - 对数正态分布（模拟真实价格分布）
+  price:
+    type: float
+    method: lognormal
+    mean: 5.5          # ln(price) 的均值
+    sigma: 1.2         # ln(price) 的标准差
+    min: 1.0
+    max: 50000.0
+
+  # 原价 - 派生自现价
+  original_price:
+    type: float
+    method: derived
+    source: price
+    multiplier_min: 1.05
+    multiplier_max: 1.5
+    null_probability: 0.15   # 15%概率无原价
+
+  # 平台 - 分类分布
+  platform:
+    type: string
+    method: choice
+    choices:
+      - 京东
+      - 京东自营
+      - 什么值得买
+    weights:
+      - 0.35
+      - 0.45
+      - 0.20
+
+  # 评分 - 截断正态分布
+  rating:
+    type: float
+    method: truncated_normal
+    mean: 4.2
+    sigma: 0.5
+    min: 1.0
+    max: 5.0
+
+  # 评论数 - 泊松分布
+  comment_count:
+    type: integer
+    method: poisson
+    lambda: 800
+    min: 0
+
+  # 商品分类
+  category:
+    type: string
+    method: choice
+    choices:
+      - 手机
+      - 电脑
+      - 家电
+      - 服装
+      - 食品
+      - 图书
+      - 美妆
+      - 家居
+      - 数码
+      - 运动
+    weights:
+      - 0.15
+      - 0.12
+      - 0.15
+      - 0.10
+      - 0.08
+      - 0.08
+      - 0.12
+      - 0.10
+      - 0.05
+      - 0.05
+
+  # 图片URL - 模板生成
+  image_url:
+    type: string
+    method: template
+    template: "https://img14.360buyimg.com/n1/{id}.jpg"
+
+  # 商品URL - 唯一标识
+  product_url:
+    type: string
+    method: template
+    template: "https://item.jd.com/{id}.html"
+    unique: true
+
+  # 采集时间
+  scraped_at:
+    type: datetime
+    method: uniform_range
+    start: "2024-01-01"
+    end: "2024-12-31"
+
+# 约束规则
+constraints:
+  - rule: "original_price >= price"
+    description: "原价应大于等于现价"
+
+  - rule: "1.0 <= rating <= 5.0"
+    description: "评分应在1-5之间"
+
+  - rule: "comment_count >= 0"
+    description: "评论数应非负"
+
+# 字段关联
+correlations:
+  - fields:
+      - rating
+      - comment_count
+    coefficient: 0.35
+    description: "高评分商品倾向于有更多评论"
+
+# 输出配置
+output:
+  excel_headers:
+    name: Product Name
+    price: Price
+    original_price: Original Price
+    platform: Platform
+    rating: Rating
+    comment_count: Comment Count
+    image_url: Image URL
+    product_url: Product URL
+    category: Category
+    scraped_at: Scraped At

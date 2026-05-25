@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据制造工厂</title>
+<style>
+:root {
+  --bg-deep: #0a1628;
+  --bg-panel: rgba(15, 30, 55, 0.9);
+  --border-glow: rgba(0, 200, 255, 0.2);
+  --accent: #00c8ff;
+  --cyan: #00e5ff;
+  --purple: #9c7cff;
+  --green: #00e676;
+  --warn: #ff6e40;
+  --gold: #ffd740;
+  --text: #d0d8e8;
+  --text-dim: #7a8ba0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,200,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.container {
+  position: relative; z-index: 1;
+  max-width: 1400px; margin: 0 auto; padding: 20px;
+}
+
+/* Header */
+.header {
+  text-align: center; padding: 20px 0 10px;
+  border-bottom: 1px solid var(--border-glow); margin-bottom: 20px;
+}
+.header h1 {
+  font-size: 28px; font-weight: 700; letter-spacing: 4px;
+  background: linear-gradient(90deg, var(--cyan), var(--accent), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header .subtitle { font-size: 13px; color: var(--text-dim); margin-top: 5px; }
+
+/* Layout */
+.main-grid {
+  display: grid; grid-template-columns: 320px 1fr; gap: 20px;
+}
+
+/* Panel */
+.panel {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 10px; padding: 16px; backdrop-filter: blur(8px);
+}
+.panel h3 {
+  font-size: 14px; font-weight: 600; color: var(--accent);
+  padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.08);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+/* Form Controls */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--border-glow);
+  border-radius: 6px; font-size: 13px; outline: none;
+  background: rgba(0,0,0,.3); color: var(--text);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--accent);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Mode Tabs */
+.mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.mode-tab {
+  flex: 1; padding: 8px; border: 1px solid var(--border-glow);
+  border-radius: 6px; background: transparent; color: var(--text-dim);
+  cursor: pointer; font-size: 12px; transition: all .2s;
+}
+.mode-tab:hover { border-color: var(--accent); color: var(--accent); }
+.mode-tab.active { border-color: var(--purple); background: rgba(156,124,255,.15); color: var(--purple); }
+
+/* Example Tags */
+.example-tag {
+  background: rgba(156,124,255,.1);
+  border: 1px solid rgba(156,124,255,.3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--purple);
+  cursor: pointer;
+  transition: all .2s;
+}
+.example-tag:hover {
+  background: var(--purple);
+  color: #fff;
+}
+
+/* Form Section */
+.form-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 20px; border: 1px solid var(--accent); border-radius: 6px;
+  cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s;
+  background: rgba(0,200,255,.1); color: var(--accent);
+}
+.btn:hover { background: var(--accent); color: #fff; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--cyan); }
+.btn-success { border-color: var(--green); color: var(--green); background: rgba(0,230,118,.1); }
+.btn-success:hover { background: var(--green); color: #fff; }
+
+.btn-group { display: flex; gap: 10px; margin-top: 16px; }
+
+/* Progress */
+.progress-bar { height: 6px; background: rgba(0,0,0,.4); border-radius: 3px; overflow: hidden; margin: 10px 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan)); border-radius: 3px; transition: width .3s; }
+
+/* Status */
+.status-bar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,.08); margin-top: 16px;
+}
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+.status-dot.running { background: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Parsed Result */
+.parsed-result {
+  background: rgba(0,0,0,.2);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>数据制造工厂</h1>
+    <div class="subtitle">DATA FACTORY - 输入结论，生成支持该结论的数据</div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Left Panel: Config -->
+    <div class="panel">
+      <h3><span class="dot"></span>结论配置</h3>
+
+      <!-- 模式切换 -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" onclick="switchMode('structured')">结构化输入</button>
+        <button class="mode-tab" onclick="switchMode('natural')">自然语言</button>
+      </div>
+
+      <!-- 结构化输入模式 -->
+      <div id="structuredMode">
+        <div class="form-group">
+          <label>目标品类</label>
+          <select id="categorySelect">
+            <option value="">全部品类 (均衡分布)</option>
+            <option value="手机">手机</option>
+            <option value="电脑">电脑</option>
+            <option value="家电">家电</option>
+            <option value="服装">服装</option>
+            <option value="食品">食品</option>
+            <option value="图书">图书</option>
+            <option value="美妆">美妆</option>
+            <option value="家居">家居</option>
+            <option value="数码">数码</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>价格区间 (元)</label>
+          <div class="form-row">
+            <input type="number" id="priceMinInput" placeholder="最低价" value="1" min="0">
+            <input type="number" id="priceMaxInput" placeholder="最高价" value="50000" min="0">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div style="font-size:11px;color:var(--purple);margin-bottom:10px;font-weight:500;">👥 人群画像</div>
+
+          <div class="form-group">
+            <label>年龄范围 (岁)</label>
+            <div class="form-row">
+              <input type="number" id="ageMinInput" placeholder="最小" value="18" min="1" max="100">
+              <input type="number" id="ageMaxInput" placeholder="最大" value="60" min="1" max="100">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>性别比例</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+              <span style="font-size:12px;color:var(--cyan);min-width:20px;">男</span>
+              <input type="range" id="genderSlider" min="0" max="100" value="50" style="flex:1" oninput="updateGenderDisplay()">
+              <span style="font-size:12px;color:var(--purple);min-width:20px;">女</span>
+            </div>
+            <div style="text-align:center;font-size:12px;margin-top:4px;color:var(--text-dim);">
+              <span id="maleRatioDisplay">50</span>% : <span id="femaleRatioDisplay">50</span>%
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div style="font-size:11px;color:var(--gold);margin-bottom:10px;font-weight:500;">📈 数据趋势</div>
+
+          <div class="form-group">
+            <label>价格趋势</label>
+            <select id="priceTrendSelect">
+              <option value="">无特定趋势</option>
+              <option value="上涨">呈上涨趋势</option>
+              <option value="下降">呈下降趋势</option>
+              <option value="稳定">保持稳定</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>评分水平</label>
+            <select id="ratingLevelSelect">
+              <option value="">无特定要求</option>
+              <option value="高">高评分 (4.5-5.0)</option>
+              <option value="低">低评分 (2.0-3.5)</option>
+              <option value="稳定">评分稳定</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 自然语言模式 -->
+      <div id="naturalMode" style="display:none;">
+        <div class="form-group">
+          <label>结论语句</label>
+          <textarea id="conclusionInput" rows="3" placeholder="例如: 手机品类价格呈上涨趋势，年龄18-35岁，女性占比65%"></textarea>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">示例结论 (点击使用):</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="example-tag" onclick="useExample('手机品类价格呈上涨趋势，年龄18-35岁')">手机年轻用户</span>
+            <span class="example-tag" onclick="useExample('美妆品类，女性占比80%，年龄25-40岁')">美妆女性</span>
+            <span class="example-tag" onclick="useExample('价格100-500元，年龄20-30岁，男性占比70%')">中价男性</span>
+            <span class="example-tag" onclick="useExample('京东自营评分明显高于普通京东')">自营高评分</span>
+          </div>
+        </div>
+
+        <div id="parsedResult" class="parsed-result" style="display:none;">
+          <div style="color:var(--accent);margin-bottom:6px;">已解析:</div>
+          <div id="parsedContent"></div>
+        </div>
+      </div>
+
+      <!-- 通用设置 -->
+      <div class="form-section">
+        <div class="form-group">
+          <label>生成数量</label>
+          <input type="number" id="countInput" value="500" min="1" max="10000">
+        </div>
+
+        <div class="form-group">
+          <label>输出格式</label>
+          <select id="formatSelect">
+            <option value="excel">Excel (.xlsx)</option>
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="generateBtn" onclick="generateData()">生成数据</button>
+      </div>
+
+      <div class="status-bar">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusMsg">就绪</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+      <div class="btn-group" id="actionBtns" style="display:none;">
+        <button class="btn" onclick="downloadData()">下载文件</button>
+        <button class="btn btn-success" onclick="exportToHejinshun()">导出到和金顺平台</button>
+      </div>
+    </div>
+
+    <!-- Right Panel: Preview -->
+    <div class="panel">
+      <h3><span class="dot" style="background:var(--purple)"></span>数据预览</h3>
+
+      <div id="previewContent" style="color:var(--text-dim);font-size:13px;text-align:center;padding:40px;">
+        配置完成后点击"生成数据"<br>
+        数据将包含: 品类、价格、评分、评论数、用户年龄、用户性别、用户地区等字段
+      </div>
+
+      <div id="dataSummary" style="display:none;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+          <div style="background:rgba(0,0,0,.2);padding:12px;border-radius:6px;text-align:center;">
+            <div style="font-size:24px;color:var(--cyan);" id="summaryCount">0</div>
+            <div style="font-size:11px;color:var(--text-dim);">数据条数</div>
+          </div>
+          <div style="background:rgba(0,0,0,.2);padding:12px;border-radius:6px;text-align:center;">
+            <div style="font-size:24px;color:var(--purple);" id="summaryPrice">-</div>
+            <div style="font-size:11px;color:var(--text-dim);">价格均值</div>
+          </div>
+          <div style="background:rgba(0,0,0,.2);padding:12px;border-radius:6px;text-align:center;">
+            <div style="font-size:24px;color:var(--gold);" id="summaryRating">-</div>
+            <div style="font-size:11px;color:var(--text-dim);">评分均值</div>
+          </div>
+        </div>
+
+        <div id="previewTable" style="max-height:300px;overflow-y:auto;">
+          <!-- 表格数据 -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentMode = 'structured';
+let generateRunning = false;
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+
+  document.getElementById('structuredMode').style.display = mode === 'structured' ? 'block' : 'none';
+  document.getElementById('naturalMode').style.display = mode === 'natural' ? 'block' : 'none';
+}
+
+function updateGenderDisplay() {
+  const value = document.getElementById('genderSlider').value;
+  document.getElementById('maleRatioDisplay').textContent = value;
+  document.getElementById('femaleRatioDisplay').textContent = 100 - value;
+}
+
+function useExample(text) {
+  document.getElementById('conclusionInput').value = text;
+  document.getElementById('parsedResult').style.display = 'none';
+}
+
+function collectStructuredParams() {
+  return {
+    category: document.getElementById('categorySelect').value || null,
+    priceMin: parseFloat(document.getElementById('priceMinInput').value) || null,
+    priceMax: parseFloat(document.getElementById('priceMaxInput').value) || null,
+    ageMin: parseInt(document.getElementById('ageMinInput').value) || null,
+    ageMax: parseInt(document.getElementById('ageMaxInput').value) || null,
+    femaleRatio: 100 - parseInt(document.getElementById('genderSlider').value),
+    priceTrend: document.getElementById('priceTrendSelect').value || null,
+    ratingLevel: document.getElementById('ratingLevelSelect').value || null,
+    count: parseInt(document.getElementById('countInput').value) || 500,
+    format: document.getElementById('formatSelect').value
+  };
+}
+
+async function generateData() {
+  if (generateRunning) return;
+
+  let params;
+  let endpoint;
+
+  if (currentMode === 'structured') {
+    params = collectStructuredParams();
+    endpoint = '/api/generate-structured';
+  } else {
+    const conclusion = document.getElementById('conclusionInput').value.trim();
+    if (!conclusion) {
+      alert('请输入结论语句');
+      return;
+    }
+    params = {
+      conclusion,
+      count: parseInt(document.getElementById('countInput').value) || 500,
+      format: document.getElementById('formatSelect').value
+    };
+    endpoint = '/api/generate-from-conclusion';
+  }
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('statusDot').classList.add('running');
+  document.getElementById('statusMsg').textContent = '正在生成...';
+  document.getElementById('actionBtns').style.display = 'none';
+  generateRunning = true;
+
+  try {
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    const data = await resp.json();
+
+    if (data.error) {
+      alert('错误: ' + data.error);
+      generateRunning = false;
+      document.getElementById('statusDot').classList.remove('running');
+      document.getElementById('statusMsg').textContent = '就绪';
+      document.getElementById('generateBtn').disabled = false;
+      return;
+    }
+
+    // 如果是自然语言模式，显示解析结果
+    if (currentMode === 'natural' && data.parsed) {
+      showParsedResult(data.parsed);
+    }
+
+    pollStatus();
+  } catch (e) {
+    alert('请求失败: ' + e.message);
+    generateRunning = false;
+    document.getElementById('statusDot').classList.remove('running');
+    document.getElementById('statusMsg').textContent = '就绪';
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+function showParsedResult(parsed) {
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+  if (parsed.category) html += `<span>品类: <b style="color:var(--cyan)">${parsed.category}</b></span>`;
+  if (parsed.platform) html += `<span>平台: <b style="color:var(--cyan)">${parsed.platform}</b></span>`;
+  if (parsed.metric) html += `<span>指标: <b style="color:var(--cyan)">${parsed.metric}</b></span>`;
+  if (parsed.direction) html += `<span>趋势: <b style="color:var(--cyan)">${parsed.direction}</b></span>`;
+  if (parsed.age_range) html += `<span>年龄: <b style="color:var(--cyan)">${parsed.age_range[0]}-${parsed.age_range[1]}岁</b></span>`;
+  if (parsed.gender_ratio) html += `<span>性别: <b style="color:var(--cyan)">${(parsed.gender_ratio.female*100).toFixed(0)}%女</b></span>`;
+  html += '</div>';
+  html += `<div style="margin-top:6px;color:var(--text-dim);">置信度: ${(parsed.confidence * 100).toFixed(0)}%</div>`;
+
+  document.getElementById('parsedContent').innerHTML = html;
+  document.getElementById('parsedResult').style.display = 'block';
+}
+
+async function pollStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const status = await resp.json();
+
+    document.getElementById('statusMsg').textContent = status.message;
+    if (status.total > 0) {
+      const pct = Math.round((status.current / status.total) * 100);
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    if (status.running) {
+      setTimeout(pollStatus, 500);
+    } else {
+      generateRunning = false;
+      document.getElementById('statusDot').classList.remove('running');
+      document.getElementById('generateBtn').disabled = false;
+
+      if (status.output_file) {
+        document.getElementById('actionBtns').style.display = 'flex';
+        document.getElementById('summaryCount').textContent = status.current;
+        document.getElementById('dataSummary').style.display = 'block';
+        document.getElementById('previewContent').style.display = 'none';
+      }
+    }
+  } catch (e) {
+    console.error('Poll failed', e);
+  }
+}
+
+function downloadData() {
+  window.location.href = '/api/download';
+}
+
+async function exportToHejinshun() {
+  try {
+    const resp = await fetch('/api/export', { method: 'POST' });
+    const data = await resp.json();
+    if (data.success) {
+      alert('已导出到和金顺平台！\n启动和金顺仪表盘即可查看。');
+    } else {
+      alert(data.error || '导出失败');
+    }
+  } catch (e) {
+    alert('导出失败: ' + e.message);
+  }
+}
+</script>
+
+</body>
+</html>
