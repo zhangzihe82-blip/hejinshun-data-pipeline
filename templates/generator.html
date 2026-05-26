@@ -6,156 +6,479 @@
 <title>Excel → ECharts 代码生成器</title>
 <style>
 :root {
-  --bg: #1e1e2e; --panel: #252536; --border: #3a3a50;
-  --accent: #4fc3f7; --text: #cdd6f4; --text-dim: #8899aa;
-  --btn: #4fc3f7; --warn: #ff6e40;
+  --bg-deep: #080e24;
+  --bg-panel: rgba(14, 24, 50, 0.85);
+  --border-glow: rgba(0, 168, 255, 0.15);
+  --accent: #00a8ff;
+  --cyan: #00e5ff;
+  --purple: #7c4dff;
+  --warn: #ff6e40;
+  --green: #00e676;
+  --gold: #ffd740;
+  --text: #d0d8e8;
+  --text-dim: #7a8ba0;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* Header */
+/* Background grid -- matches dashboard */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,168,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,168,255,.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ─── Header ─── */
 .header {
-  background: var(--panel); border-bottom: 1px solid var(--border);
-  padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 20px 0 12px;
+  background: linear-gradient(180deg, rgba(10,20,45,.95) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border-glow);
 }
-.header h1 { font-size: 18px; font-weight: 600; color: var(--accent); }
-.header .badge { font-size: 12px; color: var(--text-dim); }
+.header h1 {
+  font-size: 24px; font-weight: 700; letter-spacing: 4px;
+  background: linear-gradient(90deg, var(--cyan), var(--accent), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header .subtitle {
+  font-size: 12px; color: var(--text-dim); margin-top: 4px; letter-spacing: 2px;
+}
 
-/* Main Layout */
+/* ─── Main Layout ─── */
 .main {
+  position: relative; z-index: 1;
   display: flex; flex: 1; overflow: hidden;
 }
 
-/* Left Panel - File Upload */
+/* ─── Left Panel ─── */
 .left-panel {
-  width: 360px; min-width: 300px; background: var(--panel);
-  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  width: 380px; min-width: 320px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-glow);
+  display: flex; flex-direction: column;
+  backdrop-filter: blur(8px);
+  animation: slideInLeft .4s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Drop zone */
 .drop-zone {
-  margin: 14px; padding: 30px 14px; border: 2px dashed var(--border);
-  border-radius: 8px; text-align: center; cursor: pointer; transition: .2s;
+  margin: 16px; padding: 36px 16px;
+  border: 2px dashed rgba(0,168,255,.25);
+  border-radius: 8px; text-align: center;
+  cursor: pointer; transition: all .3s ease;
   color: var(--text-dim);
+  position: relative; overflow: hidden;
+  background: rgba(0,0,0,.15);
 }
-.drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); color: var(--accent); }
-.drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
-.drop-zone .hint { font-size: 13px; }
+.drop-zone::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(0,168,255,.04) 0%, transparent 70%);
+  opacity: 0; transition: opacity .3s;
+}
+.drop-zone:hover::before, .drop-zone.drag-over::before { opacity: 1; }
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent); color: var(--accent);
+  box-shadow: 0 0 20px rgba(0,168,255,.1);
+}
+.drop-zone .icon {
+  font-size: 40px; margin-bottom: 10px; display: block;
+  filter: drop-shadow(0 0 6px rgba(0,168,255,.2));
+}
+.drop-zone .hint { font-size: 13px; line-height: 1.6; }
+.drop-zone .hint-sub { font-size: 11px; color: var(--text-dim); margin-top: 6px; opacity: .6; }
 
+/* File list */
 .file-list {
-  flex: 1; overflow-y: auto; padding: 0 14px 14px;
+  flex: 1; overflow-y: auto; padding: 0 16px 16px;
 }
 .file-list::-webkit-scrollbar { width: 4px; }
-.file-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.file-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+.file-list::-webkit-scrollbar-track { background: transparent; }
 
 .file-item {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-  border-radius: 6px; margin-bottom: 4px; background: var(--bg);
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 6px;
+  margin-bottom: 6px;
+  background: rgba(0,0,0,.25);
+  border: 1px solid rgba(255,255,255,.03);
   font-size: 12px;
+  transition: all .2s;
+  animation: fileSlideIn .25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
-.file-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.file-item .dot.pie { background: #4fc3f7; } .file-item .dot.funnel { background: #ff6e40; }
-.file-item .dot.bar { background: #7c4dff; } .file-item .dot.scatter { background: #ffd740; }
-.file-item .dot.wordCloud { background: #00e676; } .file-item .dot.radar { background: #e040fb; }
-.file-item .dot.treemap { background: #40c4ff; } .file-item .dot.donut { background: #ff4081; }
+.file-item:hover {
+  background: rgba(0,168,255,.06);
+  border-color: var(--border-glow);
+}
+@keyframes fileSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-.file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item .dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+.file-item .dot.pie { background: #00a8ff; color: #00a8ff; }
+.file-item .dot.funnel { background: #ff6e40; color: #ff6e40; }
+.file-item .dot.bar { background: #7c4dff; color: #7c4dff; }
+.file-item .dot.scatter { background: #ffd740; color: #ffd740; }
+.file-item .dot.wordCloud { background: #00e676; color: #00e676; }
+.file-item .dot.radar { background: #e040fb; color: #e040fb; }
+.file-item .dot.treemap { background: #00e5ff; color: #00e5ff; }
+.file-item .dot.donut { background: #ff4081; color: #ff4081; }
+
+.file-item .name {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text);
+}
 .file-item .type-tag {
-  font-size: 10px; padding: 1px 8px; border-radius: 10px;
-  background: rgba(79,195,247,.15); color: var(--accent); flex-shrink: 0;
+  font-size: 10px; padding: 2px 10px; border-radius: 10px;
+  background: rgba(0,168,255,.12); color: var(--accent);
+  flex-shrink: 0; letter-spacing: .5px;
 }
-.file-item .remove { color: var(--warn); cursor: pointer; font-size: 14px; flex-shrink: 0; }
+.file-item .remove {
+  color: var(--text-dim); cursor: pointer; font-size: 14px;
+  flex-shrink: 0; transition: color .2s; width: 20px; text-align: center;
+}
+.file-item .remove:hover { color: var(--warn); }
 
+/* Panel actions */
 .panel-actions {
-  padding: 10px 14px; border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-glow);
   display: flex; gap: 8px;
 }
-.btn {
-  padding: 7px 16px; border: none; border-radius: 6px; cursor: pointer;
-  font-size: 13px; font-weight: 500; transition: .2s;
-}
-.btn-primary { background: var(--accent); color: #1e1e2e; }
-.btn-primary:hover { opacity: .85; }
-.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-.btn-warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
 
-/* Right Panel - Code */
-.right-panel {
-  flex: 1; display: flex; flex-direction: column; background: var(--bg);
+/* ─── Buttons ─── */
+.btn {
+  padding: 8px 18px; border: 1px solid var(--accent);
+  border-radius: 6px; cursor: pointer;
+  font-size: 13px; font-weight: 500;
+  transition: all .25s ease;
+  background: rgba(0,168,255,.1); color: var(--accent);
+  position: relative; overflow: hidden;
 }
+.btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(0,168,255,.15), rgba(0,229,255,.05));
+  opacity: 0; transition: opacity .25s;
+}
+.btn:hover::before { opacity: 1; }
+.btn:hover { background: var(--accent); color: #fff; border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(0,168,255,.3); }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+.btn:disabled:hover { background: rgba(0,168,255,.1); color: var(--accent);
+  box-shadow: none; border-color: var(--accent); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #0088dd);
+  color: #fff; border-color: transparent;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--cyan), var(--accent));
+  box-shadow: 0 0 20px rgba(0,168,255,.35);
+  color: #fff;
+}
+
+.btn-outline {
+  background: transparent; border: 1px solid var(--border-glow);
+  color: var(--text-dim);
+}
+.btn-outline:hover {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(0,168,255,.08);
+  box-shadow: 0 0 12px rgba(0,168,255,.15);
+}
+
+.btn-warn {
+  background: transparent; border: 1px solid var(--warn);
+  color: var(--warn);
+}
+.btn-warn:hover {
+  background: var(--warn); color: #fff;
+  box-shadow: 0 0 16px rgba(255,110,64,.3);
+}
+
+/* ─── Right Panel ─── */
+.right-panel {
+  flex: 1; display: flex; flex-direction: column;
+  background: var(--bg-deep);
+  animation: slideInRight .4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: .1s;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Code header -- terminal bar style */
 .code-header {
-  padding: 10px 16px; border-bottom: 1px solid var(--border);
+  padding: 0;
+  border-bottom: 1px solid rgba(48,54,61,.8);
+  background: #161b22;
   display: flex; align-items: center; justify-content: space-between;
 }
-.code-header span { font-size: 13px; color: var(--text-dim); }
-.code-actions { display: flex; gap: 8px; }
+.terminal-bar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+}
+.terminal-dots { display: flex; gap: 6px; }
+.terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+.terminal-dot.red { background: #ff5f56; }
+.terminal-dot.yellow { background: #ffbd2e; }
+.terminal-dot.green { background: #27c93f; }
+.terminal-title {
+  font-size: 12px; color: #8b949e;
+  font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+  letter-spacing: .5px;
+}
+.code-actions {
+  display: flex; gap: 8px; padding-right: 14px;
+}
+.code-actions .btn { font-size: 12px; padding: 5px 14px; }
 
+/* Code editor -- terminal style */
 .code-editor {
-  flex: 1; background: #111; color: #e0e0e0; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-  font-size: 13px; line-height: 1.6; padding: 16px; border: none; outline: none;
-  resize: none; tab-size: 2;
+  flex: 1; background: #0d1117; color: #e6edf3;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  font-size: 13px; line-height: 1.7; padding: 18px 20px;
+  border: none; outline: none; resize: none; tab-size: 2;
+  letter-spacing: .3px;
 }
-.code-editor::-webkit-scrollbar { width: 6px; }
-.code-editor::-webkit-scrollbar-thumb { background: #3a3a50; border-radius: 3px; }
+.code-editor::-webkit-scrollbar { width: 8px; }
+.code-editor::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+.code-editor::-webkit-scrollbar-track { background: #0d1117; }
+.code-editor::placeholder { color: #484f58; }
+.code-editor::selection { background: rgba(0,168,255,.2); }
 
+/* Status bar */
 .status-bar {
-  padding: 6px 14px; border-top: 1px solid var(--border);
-  font-size: 12px; color: var(--text-dim); display: flex; gap: 14px;
+  padding: 8px 16px;
+  border-top: 1px solid rgba(48,54,61,.8);
+  background: #161b22;
+  font-size: 12px; color: #8b949e;
+  display: flex; gap: 20px; align-items: center;
+  font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+}
+.status-bar .status-item { display: flex; align-items: center; gap: 6px; }
+.status-bar .status-dot {
+  width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+}
+.status-bar .status-dot.idle { background: var(--green); box-shadow: 0 0 6px rgba(0,230,118,.4); }
+.status-bar .status-dot.running { background: var(--accent); animation: pulse 1s infinite; box-shadow: 0 0 6px rgba(0,168,255,.4); }
+.status-bar .status-dot.done { background: var(--cyan); box-shadow: 0 0 6px rgba(0,229,255,.4); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ─── Preview Area ─── */
+.preview-section {
+  border-top: 1px solid rgba(48,54,61,.8);
+  max-height: 0; overflow: hidden;
+  transition: max-height .4s cubic-bezier(0.4, 0, 0.2, 1), opacity .3s;
+  opacity: 0; background: #0d1117;
+}
+.preview-section.active {
+  max-height: 320px; opacity: 1;
+}
+.preview-header {
+  padding: 10px 16px;
+  background: #161b22;
+  border-bottom: 1px solid rgba(48,54,61,.8);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.preview-header span {
+  font-size: 12px; color: #8b949e;
+  font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+}
+.preview-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px; padding: 12px 16px; overflow-y: auto; max-height: 260px;
+}
+.preview-grid::-webkit-scrollbar { width: 4px; }
+.preview-grid::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+.preview-card {
+  background: rgba(14,24,50,.85);
+  border: 1px solid var(--border-glow);
+  border-radius: 6px; padding: 12px;
+  text-align: center; transition: all .2s;
+  cursor: default;
+}
+.preview-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(0,168,255,.1);
+}
+.preview-card .preview-type {
+  font-size: 10px; padding: 2px 8px; border-radius: 10px;
+  display: inline-block; margin-bottom: 6px;
+  background: rgba(0,168,255,.12); color: var(--accent);
+}
+.preview-card .preview-name {
+  font-size: 11px; color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.preview-card .preview-items {
+  font-size: 18px; color: var(--cyan); font-weight: 600;
+  margin-top: 4px;
 }
 
+/* ─── Toast ─── */
 .toast {
-  position: fixed; top: 16px; right: 16px; z-index: 999;
-  background: var(--accent); color: #1e1e2e; padding: 10px 20px;
-  border-radius: 8px; font-size: 13px; font-weight: 500;
-  opacity: 0; transform: translateY(-10px); transition: .25s;
+  position: fixed; top: 20px; right: 20px; z-index: 999;
+  padding: 12px 24px; border-radius: 8px;
+  font-size: 13px; font-weight: 500;
+  opacity: 0; transform: translateY(-12px); transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  border: 1px solid transparent;
 }
 .toast.show { opacity: 1; transform: translateY(0); }
+.toast.success {
+  background: rgba(0,230,118,.12); color: var(--green);
+  border-color: rgba(0,230,118,.3);
+  box-shadow: 0 4px 20px rgba(0,230,118,.15);
+}
+.toast.error {
+  background: rgba(255,110,64,.12); color: var(--warn);
+  border-color: rgba(255,110,64,.3);
+  box-shadow: 0 4px 20px rgba(255,110,64,.15);
+}
+.toast.info {
+  background: rgba(0,168,255,.12); color: var(--accent);
+  border-color: rgba(0,168,255,.3);
+  box-shadow: 0 4px 20px rgba(0,168,255,.15);
+}
+
+/* ─── Keyboard shortcut hint ─── */
+.shortcut-hint {
+  font-size: 10px; color: #484f58;
+  margin-left: auto; padding-right: 14px;
+  font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+}
+.shortcut-hint kbd {
+  display: inline-block; padding: 1px 5px;
+  background: #21262d; border: 1px solid #30363d;
+  border-radius: 3px; font-size: 10px; color: #8b949e;
+}
+
+/* ─── Empty state ─── */
+.empty-state {
+  padding: 40px 20px; text-align: center;
+  color: var(--text-dim); font-size: 13px;
+}
+.empty-state .empty-icon {
+  font-size: 32px; margin-bottom: 10px; opacity: .4;
+  filter: grayscale(1);
+}
+.empty-state .empty-text { line-height: 1.6; }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .main { flex-direction: column; }
+  .left-panel { width: 100%; min-width: auto; max-height: 45vh; }
+  .right-panel { flex: 1; }
+  .header h1 { font-size: 18px; letter-spacing: 2px; }
+}
+
+/* ─── Page load animation ─── */
+@keyframes glowPulse {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: radial-gradient(ellipse at center, rgba(0,168,255,0.06) 0%, transparent 70%);
+  animation: glowPulse .6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
 </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
   <h1>Excel → ECharts 代码生成器</h1>
-  <span class="badge">将Excel数据转换为数据大屏代码</span>
+  <div class="subtitle">EXCEL TO ECHARTS CONFIG GENERATOR</div>
 </div>
 
 <div class="main">
-  <!-- Left Panel -->
+  <!-- Left Panel - File Upload -->
   <div class="left-panel">
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <div class="icon">📁</div>
-      <div class="hint">拖拽 Excel 文件到此处<br>或点击选择（支持多选）</div>
+      <span class="icon">&#128193;</span>
+      <div class="hint">拖拽 Excel 文件到此处<br>或点击选择文件（支持多选）</div>
+      <div class="hint-sub">.xlsx / .xls</div>
     </div>
     <input type="file" id="fileInput" accept=".xlsx,.xls" multiple style="display:none" onchange="handleFiles(this.files)">
     <div class="file-list" id="fileList">
-      <div style="padding:30px;text-align:center;color:var(--text-dim);font-size:13px;">暂无文件<br>请上传 .xlsx 文件</div>
+      <div class="empty-state">
+        <div class="empty-icon">&#128196;</div>
+        <div class="empty-text">暂无文件<br>请上传 .xlsx 文件</div>
+      </div>
     </div>
     <div class="panel-actions">
       <button class="btn btn-primary" onclick="generateCode()" id="btnGenerate">生成代码</button>
-      <button class="btn btn-outline" onclick="clearFiles()">清空文件</button>
+      <button class="btn btn-outline" onclick="clearFiles()">清空</button>
       <button class="btn btn-outline" onclick="loadDemo()">加载示例</button>
     </div>
   </div>
 
-  <!-- Right Panel -->
+  <!-- Right Panel - Code -->
   <div class="right-panel">
     <div class="code-header">
-      <span>生成的配置代码（复制后粘贴到数据大屏的"自定义数据"面板）</span>
-      <div class="code-actions">
-        <button class="btn btn-primary" onclick="copyCode()">复制代码</button>
-        <button class="btn btn-outline" onclick="downloadCode()">下载 JSON</button>
+      <div class="terminal-bar">
+        <div class="terminal-dots">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+        </div>
+        <span class="terminal-title">chart-config.json</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="code-actions">
+          <button class="btn btn-primary" onclick="copyCode()" style="font-size:12px;padding:5px 14px;">复制代码</button>
+          <button class="btn btn-outline" onclick="downloadCode()" style="font-size:12px;padding:5px 14px;">下载 JSON</button>
+        </div>
+        <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>G</kbd> 生成</span>
       </div>
     </div>
-    <textarea class="code-editor" id="codeEditor" placeholder="上传Excel文件后点击「生成代码」，转化后的ECharts配置将在这里显示..." readonly spellcheck="false"></textarea>
+    <textarea class="code-editor" id="codeEditor" placeholder="// 上传 Excel 文件后点击「生成代码」&#10;// 转化后的 ECharts 配置将在这里显示...&#10;&#10;$ waiting for input..." readonly spellcheck="false"></textarea>
+
+    <!-- Preview Section -->
+    <div class="preview-section" id="previewSection">
+      <div class="preview-header">
+        <span>chart preview</span>
+        <button class="btn btn-outline" onclick="togglePreview()" style="font-size:11px;padding:3px 12px;">收起</button>
+      </div>
+      <div class="preview-grid" id="previewGrid"></div>
+    </div>
+
     <div class="status-bar">
+      <div class="status-item">
+        <span class="status-dot idle" id="statusDot"></span>
+        <span id="genStatus">就绪</span>
+      </div>
       <span id="fileCount">已加载: 0 个文件</span>
       <span id="chartCount">图表数: 0</span>
-      <span id="genStatus">就绪</span>
+      <span style="margin-left:auto;color:#30363d;">utf-8 | json</span>
     </div>
   </div>
 </div>
@@ -164,6 +487,7 @@ body {
 
 <script>
 let uploadedFiles = [];
+let previewVisible = false;
 
 // ─── File Handling ──────────────────────────────────────
 const dropZone = document.getElementById('dropZone');
@@ -186,15 +510,15 @@ function handleFiles(fileList) {
 function renderFileList() {
   const container = document.getElementById('fileList');
   if (!uploadedFiles.length) {
-    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-dim);font-size:13px;">暂无文件<br>请上传 .xlsx 文件</div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128196;</div><div class="empty-text">暂无文件<br>请上传 .xlsx 文件</div></div>';
   } else {
     container.innerHTML = uploadedFiles.map((f, i) => {
       const type = detectType(f.name);
-      return `<div class="file-item">
+      return `<div class="file-item" style="animation-delay:${i * 0.04}s">
         <span class="dot ${type}"></span>
         <span class="name" title="${esc(f.name)}">${esc(f.name)}</span>
         <span class="type-tag">${typeName(type)}</span>
-        <span class="remove" onclick="removeFile(${i})">✕</span>
+        <span class="remove" onclick="removeFile(${i})">&#10005;</span>
       </div>`;
     }).join('');
   }
@@ -202,7 +526,14 @@ function renderFileList() {
 }
 
 function removeFile(i) { uploadedFiles.splice(i, 1); renderFileList(); }
-function clearFiles() { uploadedFiles = []; renderFileList(); document.getElementById('codeEditor').value = ''; }
+function clearFiles() {
+  uploadedFiles = []; renderFileList();
+  document.getElementById('codeEditor').value = '';
+  document.getElementById('chartCount').textContent = '图表数: 0';
+  hidePreview();
+  updateStatusDot('idle');
+  document.getElementById('genStatus').textContent = '就绪';
+}
 
 function detectType(name) {
   const map = { '饼图':'pie','漏斗图':'funnel','柱状图':'bar','气泡图':'scatter','词云':'wordCloud','雷达图':'radar','矩形树图':'treemap','环形图':'donut' };
@@ -217,9 +548,10 @@ function typeName(t) {
 
 // ─── Generate Code ──────────────────────────────────────
 async function generateCode() {
-  if (!uploadedFiles.length) { showToast('请先上传 Excel 文件'); return; }
+  if (!uploadedFiles.length) { showToast('请先上传 Excel 文件', 'error'); return; }
   document.getElementById('btnGenerate').disabled = true;
   document.getElementById('genStatus').textContent = '处理中...';
+  updateStatusDot('running');
 
   const formData = new FormData();
   uploadedFiles.forEach(f => formData.append('files', f));
@@ -227,53 +559,99 @@ async function generateCode() {
   try {
     const resp = await fetch('/api/process', { method: 'POST', body: formData });
     const data = await resp.json();
-    if (data.error) { showToast(data.error); return; }
+    if (data.error) { showToast(data.error, 'error'); updateStatusDot('idle'); return; }
+
     document.getElementById('codeEditor').value = data.code;
     document.getElementById('chartCount').textContent = '图表数: ' + data.count;
     document.getElementById('genStatus').textContent = '生成完成';
-    showToast('代码已生成！共 ' + data.count + ' 个图表');
+    updateStatusDot('done');
+
+    // Show preview
+    if (data.config && data.config.charts) {
+      renderPreview(data.config.charts);
+    }
+
+    showToast('代码已生成! 共 ' + data.count + ' 个图表', 'success');
   } catch (e) {
-    showToast('处理失败: ' + e.message);
+    showToast('处理失败: ' + e.message, 'error');
+    updateStatusDot('idle');
   } finally {
     document.getElementById('btnGenerate').disabled = false;
   }
 }
 
+// ─── Preview ────────────────────────────────────────────
+function renderPreview(charts) {
+  const grid = document.getElementById('previewGrid');
+  grid.innerHTML = charts.map(c => {
+    const type = typeName(c.type);
+    const items = c.data ? c.data.length : 0;
+    return `<div class="preview-card">
+      <span class="preview-type">${type}</span>
+      <div class="preview-name" title="${esc(c.title || '')}">${esc(c.title || '未命名')}</div>
+      <div class="preview-items">${items}</div>
+    </div>`;
+  }).join('');
+  showPreview();
+}
+
+function showPreview() {
+  previewVisible = true;
+  document.getElementById('previewSection').classList.add('active');
+}
+
+function hidePreview() {
+  previewVisible = false;
+  document.getElementById('previewSection').classList.remove('active');
+}
+
+function togglePreview() {
+  if (previewVisible) hidePreview();
+  else showPreview();
+}
+
+function updateStatusDot(state) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot ' + state;
+}
+
 // ─── Actions ────────────────────────────────────────────
 function copyCode() {
   const code = document.getElementById('codeEditor').value;
-  if (!code) { showToast('没有代码可复制'); return; }
-  navigator.clipboard.writeText(code).then(() => showToast('代码已复制到剪贴板'));
+  if (!code) { showToast('没有代码可复制', 'error'); return; }
+  navigator.clipboard.writeText(code).then(() => showToast('代码已复制到剪贴板', 'success'));
 }
 
 function downloadCode() {
   const code = document.getElementById('codeEditor').value;
-  if (!code) return;
+  if (!code) { showToast('没有代码可下载', 'error'); return; }
   const blob = new Blob([code], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = 'chart_config.json'; a.click();
+  showToast('JSON 文件已下载', 'success');
 }
 
 function loadDemo() {
-  // Load the 8 漆器 Excel files
-  showToast('请手动选择123文件夹中的Excel文件');
+  showToast('请手动选择文件夹中的 Excel 文件', 'info');
   document.getElementById('fileInput').click();
 }
 
-function showToast(msg) {
+// ─── Toast ──────────────────────────────────────────────
+function showToast(msg, type = 'info') {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  // Force reflow for re-trigger animation
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// 键盘快捷键
+// ─── Keyboard shortcuts ─────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'g') { e.preventDefault(); generateCode(); }
-  if (e.ctrlKey && e.key === 'c' && document.activeElement !== document.getElementById('codeEditor')) {
-    // Let default behavior handle copy in textarea
-  }
 });
 </script>
 </body>

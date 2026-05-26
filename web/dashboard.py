@@ -151,6 +151,164 @@ def create_dashboard_app():
         t.start()
         return jsonify({'success': True, 'message': '数据采集任务已启动'})
 
+    @app.route('/api/scrape/search', methods=['POST'])
+    def api_scrape_search():
+        """关键词搜索采集：根据平台和关键词自动构建搜索URL"""
+        with _status_lock:
+            if _scrape_status['running']:
+                return jsonify({'error': '数据采集任务正在进行中，请等待完成或停止当前任务'}), 400
+            _scrape_status['running'] = True
+            _scrape_status['total'] = 0
+            _scrape_status['current'] = 0
+            _scrape_status['message'] = '准备采集...'
+            _scrape_status['should_stop'] = False
+
+        data = request.get_json() or {}
+        keyword = data.get('keyword', '').strip()
+        platform = data.get('platform', 'jd').strip().lower()
+        count = max(1, min(int(data.get('count', 50)), 200))
+
+        if not keyword and platform != 'all':
+            with _status_lock:
+                _scrape_status['running'] = False
+            return jsonify({'error': '关键词不能为空'}), 400
+
+        # 根据平台构建搜索URL
+        from urllib.parse import quote
+        if platform == 'all':
+            # 全部平台模式：依次采集各平台
+            platforms_to_scrape = ['jd', 'smzdm']
+            platform_labels = {'jd': '京东', 'smzdm': '什么值得买'}
+            _update_status(total=count, message=f'准备从全部平台采集 {count} 条数据...')
+
+            def _task():
+                try:
+                    from crawler import scrape_jd, scrape_smzdm
+                    from storage import (
+                        ensure_dirs, clean_records, merge_data,
+                        save_raw, save_cleaned, read_cleaned
+                    )
+
+                    all_products = []
+                    per_platform_count = max(1, count // len(platforms_to_scrape))
+
+                    for pform in platforms_to_scrape:
+                        if _scrape_status['should_stop']:
+                            break
+
+                        _update_status(message=f'📡 正在从{platform_labels[pform]}采集...')
+
+                        if pform == 'jd':
+                            url = f'https://search.jd.com/Search?keyword={quote(keyword)}' if keyword else None
+                            result = scrape_jd(
+                                count=per_platform_count,
+                                url=url,
+                                stop_check=lambda: _scrape_status['should_stop'],
+                                progress_callback=lambda cur, tot: _update_status(
+                                    current=len(all_products) + cur, message=f'🔄 {platform_labels[pform]}采集 {cur}/{tot}'),
+                                message_callback=lambda msg: _update_status(message=msg)
+                            )
+                        else:
+                            url = f'https://search.smzdm.com/?c=home&s={quote(keyword)}' if keyword else None
+                            result = scrape_smzdm(
+                                count=per_platform_count,
+                                url=url,
+                                stop_check=lambda: _scrape_status['should_stop'],
+                                progress_callback=lambda cur, tot: _update_status(
+                                    current=len(all_products) + cur, message=f'🔄 {platform_labels[pform]}采集 {cur}/{tot}'),
+                                message_callback=lambda msg: _update_status(message=msg)
+                            )
+
+                        if result:
+                            all_products.extend(result)
+
+                    if not all_products:
+                        _update_status(running=False, message='❌ 未获取到有效数据')
+                        return
+
+                    _update_status(message='🔧 开始数据清洗处理...')
+                    cleaned = clean_records(all_products)
+
+                    if cleaned:
+                        _update_status(message='💾 保存原始数据...')
+                        save_raw(all_products)
+
+                        _update_status(message='📊 合并已有数据...')
+                        existing = read_cleaned()
+                        merged = merge_data(existing, cleaned)
+
+                        _update_status(message='💾 写入存储引擎...')
+                        save_cleaned(merged)
+
+                    _update_status(running=False, current=len(all_products),
+                                   message=f'✅ 完成！共入库 {len(cleaned)} 条数据')
+                    logger.info('全部平台采集完成 — %d 条', len(all_products))
+                except Exception as exc:
+                    logger.exception('全部平台采集出错')
+                    _update_status(running=False, message=f'❌ 出错: {exc}')
+
+            t = threading.Thread(target=_task, daemon=True)
+            t.start()
+            return jsonify({'success': True, 'message': '全部平台采集任务已启动'})
+
+        elif platform == 'jd':
+            url = f'https://search.jd.com/Search?keyword={quote(keyword)}'
+        elif platform == 'smzdm':
+            url = f'https://search.smzdm.com/?c=home&s={quote(keyword)}'
+        else:
+            with _status_lock:
+                _scrape_status['running'] = False
+            return jsonify({'error': f'不支持的平台: {platform}，支持: all, jd, smzdm'}), 400
+
+        _update_status(total=count, message=f'准备搜索「{keyword}」采集 {count} 条数据...')
+
+        def _task():
+            try:
+                from crawler import scrape
+                from storage import (
+                    ensure_dirs, clean_records, merge_data,
+                    save_raw, save_cleaned, read_cleaned
+                )
+
+                _update_status(message=f'📡 正在搜索「{keyword}」...')
+                products = scrape(
+                    count=count,
+                    url=url,
+                    stop_check=lambda: _scrape_status['should_stop'],
+                    progress_callback=lambda cur, tot: _update_status(
+                        current=cur, message=f'🔄 正在采集数据 {cur}/{tot}'),
+                    message_callback=lambda msg: _update_status(message=msg)
+                )
+
+                if not products:
+                    _update_status(running=False, message=f'❌ 搜索「{keyword}」未获取到有效数据')
+                    return
+
+                _update_status(message='🔧 开始数据清洗处理...')
+                cleaned = clean_records(products)
+
+                if cleaned:
+                    _update_status(message='💾 保存原始数据...')
+                    save_raw(products)
+
+                    _update_status(message='📊 合并已有数据...')
+                    existing = read_cleaned()
+                    merged = merge_data(existing, cleaned)
+
+                    _update_status(message='💾 写入存储引擎...')
+                    save_cleaned(merged)
+
+                _update_status(running=False, current=len(products),
+                               message=f'✅ 完成！共入库 {len(cleaned)} 条数据')
+                logger.info('关键词搜索采集完成 — 关键词: %s, %d 条', keyword, len(products))
+            except Exception as exc:
+                logger.exception('关键词搜索采集出错')
+                _update_status(running=False, message=f'❌ 出错: {exc}')
+
+        t = threading.Thread(target=_task, daemon=True)
+        t.start()
+        return jsonify({'success': True, 'message': f'搜索「{keyword}」采集任务已启动', 'url': url})
+
     @app.route('/api/stop', methods=['POST'])
     def api_stop():
         _update_status(should_stop=True, message='正在停止...')

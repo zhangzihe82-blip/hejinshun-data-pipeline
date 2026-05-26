@@ -6,14 +6,14 @@
 <title>数据制造工厂</title>
 <style>
 :root {
-  --bg-deep: #0a1628;
-  --bg-panel: rgba(15, 30, 55, 0.9);
-  --border-glow: rgba(0, 200, 255, 0.2);
-  --accent: #00c8ff;
+  --bg-deep: #080e24;
+  --bg-panel: rgba(14, 24, 50, 0.85);
+  --border-glow: rgba(0, 168, 255, 0.15);
+  --accent: #00a8ff;
   --cyan: #00e5ff;
-  --purple: #9c7cff;
-  --green: #00e676;
+  --purple: #7c4dff;
   --warn: #ff6e40;
+  --green: #00e676;
   --gold: #ffd740;
   --text: #d0d8e8;
   --text-dim: #7a8ba0;
@@ -26,78 +26,129 @@ body {
   background: var(--bg-deep);
   color: var(--text);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
+/* 背景网格 */
 body::before {
   content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
   background-image:
-    linear-gradient(rgba(0,200,255,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,200,255,.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(rgba(0,168,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,168,255,.04) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
 .container {
   position: relative; z-index: 1;
-  max-width: 1400px; margin: 0 auto; padding: 20px;
+  max-width: 1600px; margin: 0 auto; padding: 0 24px 30px;
 }
 
-/* Header */
+/* ─── Header ─── */
 .header {
-  text-align: center; padding: 20px 0 10px;
-  border-bottom: 1px solid var(--border-glow); margin-bottom: 20px;
+  position: relative; z-index: 1;
+  text-align: center; padding: 22px 0 10px;
+  background: linear-gradient(180deg, rgba(10,20,45,.95) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border-glow);
+  margin-bottom: 16px;
 }
 .header h1 {
-  font-size: 28px; font-weight: 700; letter-spacing: 4px;
+  font-size: 32px; font-weight: 700; letter-spacing: 6px;
   background: linear-gradient(90deg, var(--cyan), var(--accent), var(--purple));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-.header .subtitle { font-size: 13px; color: var(--text-dim); margin-top: 5px; }
+.header .subtitle { font-size: 13px; color: var(--text-dim); margin-top: 4px; letter-spacing: 2px; }
 
-/* Layout */
+/* ─── 统计卡片行 ─── */
+.stat-row {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 18px 20px; text-align: center;
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+.stat-card::after {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+}
+.stat-card:nth-child(1)::after { background: var(--accent); }
+.stat-card:nth-child(2)::after { background: var(--purple); }
+.stat-card:nth-child(3)::after { background: var(--gold); }
+.stat-card:nth-child(4)::after { background: var(--green); }
+.stat-card .label { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+.stat-card .value { font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+.stat-card:nth-child(1) .value { color: var(--accent); }
+.stat-card:nth-child(2) .value { color: var(--purple); }
+.stat-card:nth-child(3) .value { color: var(--gold); }
+.stat-card:nth-child(4) .value { color: var(--green); }
+.stat-card .unit { font-size: 13px; color: var(--text-dim); }
+
+/* ─── Layout ─── */
 .main-grid {
-  display: grid; grid-template-columns: 320px 1fr; gap: 20px;
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 360px 1fr; gap: 16px;
 }
 
-/* Panel */
+/* ─── Panel ─── */
 .panel {
   background: var(--bg-panel); border: 1px solid var(--border-glow);
-  border-radius: 10px; padding: 16px; backdrop-filter: blur(8px);
+  border-radius: 8px; padding: 16px; backdrop-filter: blur(8px);
+  animation: panelFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+.panel:nth-child(1) { animation-delay: 0.05s; }
+.panel:nth-child(2) { animation-delay: 0.15s; }
+
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .panel h3 {
-  font-size: 14px; font-weight: 600; color: var(--accent);
-  padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.08);
+  font-size: 14px; font-weight: 600; color: var(--text);
+  padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.06);
   margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
 }
-.panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
-/* Form Controls */
+/* ─── Form Controls ─── */
 .form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
 .form-group input, .form-group select, .form-group textarea {
   width: 100%; padding: 8px 12px; border: 1px solid var(--border-glow);
   border-radius: 6px; font-size: 13px; outline: none;
   background: rgba(0,0,0,.3); color: var(--text);
+  transition: border-color .2s, box-shadow .2s;
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0,168,255,.1);
 }
+.form-group textarea {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+}
+.form-group select option { background: #0e1832; color: var(--text); }
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-/* Mode Tabs */
-.mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+/* ─── Mode Tabs ─── */
+.mode-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .mode-tab {
-  flex: 1; padding: 8px; border: 1px solid var(--border-glow);
+  flex: 1; padding: 9px; border: 1px solid var(--border-glow);
   border-radius: 6px; background: transparent; color: var(--text-dim);
-  cursor: pointer; font-size: 12px; transition: all .2s;
+  cursor: pointer; font-size: 12px; transition: all .2s; font-weight: 500;
 }
 .mode-tab:hover { border-color: var(--accent); color: var(--accent); }
-.mode-tab.active { border-color: var(--purple); background: rgba(156,124,255,.15); color: var(--purple); }
+.mode-tab.active {
+  background: rgba(0,168,255,.15); color: var(--accent); border-color: var(--accent);
+}
 
-/* Example Tags */
+/* ─── Example Tags ─── */
 .example-tag {
-  background: rgba(156,124,255,.1);
-  border: 1px solid rgba(156,124,255,.3);
+  background: rgba(124,77,255,.1);
+  border: 1px solid rgba(124,77,255,.3);
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 11px;
@@ -108,58 +159,253 @@ body::before {
 .example-tag:hover {
   background: var(--purple);
   color: #fff;
+  transform: translateY(-1px);
 }
 
-/* Form Section */
+/* ─── Form Section ─── */
 .form-section {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,.08);
+  border-top: 1px solid rgba(255,255,255,.06);
 }
 
-/* Buttons */
+/* ─── Buttons ─── */
 .btn {
-  padding: 10px 20px; border: 1px solid var(--accent); border-radius: 6px;
+  padding: 8px 18px; border: 1px solid var(--accent); border-radius: 6px;
   cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s;
-  background: rgba(0,200,255,.1); color: var(--accent);
+  background: rgba(0,168,255,.1); color: var(--accent);
 }
 .btn:hover { background: var(--accent); color: #fff; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
 .btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: var(--cyan); }
+.btn-primary:hover { background: #0090dd; }
 .btn-success { border-color: var(--green); color: var(--green); background: rgba(0,230,118,.1); }
 .btn-success:hover { background: var(--green); color: #fff; }
+.btn-danger { border-color: var(--warn); color: var(--warn); background: rgba(255,110,64,.1); }
+.btn-danger:hover { background: var(--warn); color: #fff; }
+.btn-process {
+  padding: 12px 36px; font-size: 14px; font-weight: 600;
+  border: 2px solid var(--green); color: var(--green);
+  background: rgba(0,230,118,.1); border-radius: 8px;
+  cursor: pointer; transition: all .2s;
+}
+.btn-process:hover { background: var(--green); color: #fff; }
 
 .btn-group { display: flex; gap: 10px; margin-top: 16px; }
 
-/* Progress */
-.progress-bar { height: 6px; background: rgba(0,0,0,.4); border-radius: 3px; overflow: hidden; margin: 10px 0; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan)); border-radius: 3px; transition: width .3s; }
+/* ─── Progress Section ─── */
+.progress-section {
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  border-radius: 8px; padding: 16px 18px; margin-bottom: 14px;
+}
+.progress-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.progress-title { font-size: 13px; color: var(--text); }
+.progress-percent { font-size: 13px; color: var(--accent); font-weight: 600; }
+.progress-bar {
+  height: 8px; background: rgba(0,0,0,.4); border-radius: 4px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 4px; transition: width 0.3s ease;
+  position: relative;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+  animation: progressShine 2s ease infinite;
+}
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
 
-/* Status */
+/* ─── Status ─── */
 .status-bar {
   display: flex; align-items: center; gap: 10px; padding: 10px 0;
-  border-top: 1px solid rgba(255,255,255,.08); margin-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.06); margin-top: 14px;
 }
-.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--green); }
 .status-dot.running { background: var(--accent); animation: pulse 1s infinite; }
+.status-msg { font-size: 12px; color: var(--text-dim); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-/* Parsed Result */
+/* ─── Parsed Result ─── */
 .parsed-result {
   background: rgba(0,0,0,.2);
   border-radius: 6px;
   padding: 10px;
   margin-bottom: 12px;
   font-size: 12px;
+  border-left: 3px solid var(--accent);
 }
 
-/* Responsive */
-@media (max-width: 900px) {
+/* ─── Terminal Console ─── */
+.terminal-wrapper {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+}
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.terminal-dot.red { background: #ff5f56; }
+.terminal-dot.yellow { background: #ffbd2e; }
+.terminal-dot.green { background: #27c93f; }
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: #8b949e;
+}
+.terminal-clear {
+  padding: 4px 10px;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  background: transparent;
+  color: #8b949e;
+  transition: all .2s;
+}
+.terminal-clear:hover { border-color: var(--accent); color: var(--accent); }
+
+.terminal-body {
+  height: 260px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  background: #0d1117;
+}
+.terminal-body::-webkit-scrollbar { width: 8px; }
+.terminal-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+.terminal-body::-webkit-scrollbar-track { background: #0d1117; }
+
+.terminal-line {
+  display: flex;
+  align-items: flex-start;
+  padding: 3px 0;
+  animation: terminalFadeIn .2s ease;
+}
+@keyframes terminalFadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.terminal-time {
+  color: #484f58;
+  font-size: 11px;
+  margin-right: 10px;
+  min-width: 70px;
+}
+.terminal-content {
+  flex: 1;
+  word-break: break-all;
+}
+
+.terminal-line.info .terminal-content { color: #8b949e; }
+.terminal-line.success .terminal-content { color: #3fb950; }
+.terminal-line.warning .terminal-content { color: #d29922; }
+.terminal-line.error .terminal-content { color: #f85149; }
+.terminal-line.process .terminal-content { color: #58a6ff; }
+.terminal-line.system .terminal-content { color: #a371f7; font-style: italic; }
+
+.terminal-line .keyword { color: #ff7b72; }
+.terminal-line .string { color: #a5d6ff; }
+.terminal-line .number { color: #79c0ff; }
+.terminal-line .function { color: #d2a8ff; }
+.terminal-line .comment { color: #8b949e; font-style: italic; }
+
+/* ─── Summary Cards inside Preview ─── */
+.summary-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.summary-item {
+  background: rgba(0,0,0,.2); padding: 14px; border-radius: 6px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.summary-item::after {
+  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+}
+.summary-item:nth-child(1)::after { background: var(--cyan); }
+.summary-item:nth-child(2)::after { background: var(--purple); }
+.summary-item:nth-child(3)::after { background: var(--gold); }
+.summary-item .summary-value { font-size: 24px; font-weight: 700; }
+.summary-item:nth-child(1) .summary-value { color: var(--cyan); }
+.summary-item:nth-child(2) .summary-value { color: var(--purple); }
+.summary-item:nth-child(3) .summary-value { color: var(--gold); }
+.summary-item .summary-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+/* ─── Preview Table ─── */
+.preview-table-wrap { max-height: 220px; overflow-y: auto; }
+.preview-table-wrap::-webkit-scrollbar { width: 4px; }
+.preview-table-wrap::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th {
+  padding: 8px 10px; text-align: left; color: var(--accent);
+  border-bottom: 1px solid rgba(255,255,255,.08); font-weight: 500;
+  position: sticky; top: 0; background: rgba(14, 24, 50, .95);
+}
+tbody td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.03); }
+tbody tr:hover { background: rgba(0,168,255,.05); }
+.price-hl { color: var(--warn); font-weight: 600; }
+.platform-badge {
+  display: inline-block; padding: 1px 10px; border-radius: 10px;
+  font-size: 11px; background: rgba(0,168,255,.12); color: var(--accent);
+}
+
+/* ─── Process Section ─── */
+.process-section {
+  text-align: center; margin-top: 16px;
+}
+
+/* ─── Right Column Stacking ─── */
+.right-col { display: flex; flex-direction: column; gap: 16px; }
+
+/* ─── Entrance Glow Pulse ─── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: radial-gradient(ellipse at center, rgba(0,168,255,0.06) 0%, transparent 70%);
+  animation: glowPulse 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes glowPulse {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1100px) {
   .main-grid { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .stat-row { grid-template-columns: 1fr; }
+  .header h1 { font-size: 24px; letter-spacing: 3px; }
 }
 
-/* Scrollbar */
+/* ─── Scrollbar (Global) ─── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,.2); }
@@ -168,23 +414,49 @@ body::before {
 <body>
 
 <div class="container">
+  <!-- Header -->
   <div class="header">
     <h1>数据制造工厂</h1>
-    <div class="subtitle">DATA FACTORY - 输入结论，生成支持该结论的数据</div>
+    <div class="subtitle">DATA FACTORY -- CONCLUSION-DRIVEN DATA GENERATION</div>
   </div>
 
+  <!-- Stat Cards -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="label">生成数据</div>
+      <div class="value" id="statCount">0</div>
+      <div class="unit">条</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">价格均值</div>
+      <div class="value" id="statPrice">-</div>
+      <div class="unit">元</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">评分均值</div>
+      <div class="value" id="statRating">-</div>
+      <div class="unit">分</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">运行状态</div>
+      <div class="value" id="statStatus" style="font-size:16px;">就绪</div>
+      <div class="unit">&nbsp;</div>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
   <div class="main-grid">
     <!-- Left Panel: Config -->
     <div class="panel">
-      <h3><span class="dot"></span>结论配置</h3>
+      <h3><span class="dot" style="background:var(--accent)"></span>结论配置</h3>
 
-      <!-- 模式切换 -->
+      <!-- Mode Switch -->
       <div class="mode-tabs">
         <button class="mode-tab active" onclick="switchMode('structured')">结构化输入</button>
         <button class="mode-tab" onclick="switchMode('natural')">自然语言</button>
       </div>
 
-      <!-- 结构化输入模式 -->
+      <!-- Structured Input Mode -->
       <div id="structuredMode">
         <div class="form-group">
           <label>目标品类</label>
@@ -260,11 +532,11 @@ body::before {
         </div>
       </div>
 
-      <!-- 自然语言模式 -->
+      <!-- Natural Language Mode -->
       <div id="naturalMode" style="display:none;">
         <div class="form-group">
           <label>结论语句</label>
-          <textarea id="conclusionInput" rows="3" placeholder="例如: 手机品类价格呈上涨趋势，年龄18-35岁，女性占比65%"></textarea>
+          <textarea id="conclusionInput" rows="4" placeholder="例如: 手机品类价格呈上涨趋势，年龄18-35岁，女性占比65%"></textarea>
         </div>
 
         <div style="margin-bottom:12px;">
@@ -284,67 +556,100 @@ body::before {
         </div>
       </div>
 
-      <!-- 通用设置 -->
+      <!-- Common Settings -->
       <div class="form-section">
-        <div class="form-group">
-          <label>生成数量</label>
-          <input type="number" id="countInput" value="500" min="1" max="10000">
-        </div>
-
-        <div class="form-group">
-          <label>输出格式</label>
-          <select id="formatSelect">
-            <option value="excel">Excel (.xlsx)</option>
-            <option value="json">JSON</option>
-            <option value="csv">CSV</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>生成数量</label>
+            <input type="number" id="countInput" value="500" min="1" max="10000">
+          </div>
+          <div class="form-group">
+            <label>输出格式</label>
+            <select id="formatSelect">
+              <option value="excel">Excel (.xlsx)</option>
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+            </select>
+          </div>
         </div>
       </div>
 
       <div class="btn-group">
         <button class="btn btn-primary" id="generateBtn" onclick="generateData()">生成数据</button>
+        <button class="btn btn-danger" id="resetBtn" onclick="resetTask()" style="display:none;">重置状态</button>
       </div>
 
       <div class="status-bar">
         <span class="status-dot" id="statusDot"></span>
-        <span id="statusMsg">就绪</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-
-      <div class="btn-group" id="actionBtns" style="display:none;">
-        <button class="btn" onclick="downloadData()">下载文件</button>
-        <button class="btn btn-success" onclick="exportToHejinshun()">导出到和金顺平台</button>
+        <span class="status-msg" id="statusMsg">就绪</span>
       </div>
     </div>
 
-    <!-- Right Panel: Preview -->
-    <div class="panel">
-      <h3><span class="dot" style="background:var(--purple)"></span>数据预览</h3>
-
-      <div id="previewContent" style="color:var(--text-dim);font-size:13px;text-align:center;padding:40px;">
-        配置完成后点击"生成数据"<br>
-        数据将包含: 品类、价格、评分、评论数、用户年龄、用户性别、用户地区等字段
+    <!-- Right Column -->
+    <div class="right-col">
+      <!-- Progress Section -->
+      <div class="progress-section" id="progressSection" style="display:none;">
+        <div class="progress-header">
+          <span class="progress-title" id="progressTitle">准备生成...</span>
+          <span class="progress-percent" id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+        </div>
       </div>
 
-      <div id="dataSummary" style="display:none;">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
-          <div style="background:rgba(0,0,0,.2);padding:12px;border-radius:6px;text-align:center;">
-            <div style="font-size:24px;color:var(--cyan);" id="summaryCount">0</div>
-            <div style="font-size:11px;color:var(--text-dim);">数据条数</div>
+      <!-- Terminal Console -->
+      <div class="terminal-wrapper">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
           </div>
-          <div style="background:rgba(0,0,0,.2);padding:12px;border-radius:6px;text-align:center;">
-            <div style="font-size:24px;color:var(--purple);" id="summaryPrice">-</div>
-            <div style="font-size:11px;color:var(--text-dim);">价格均值</div>
+          <span class="terminal-title">hejinshun-data-factory ~ bash</span>
+          <button class="terminal-clear" onclick="clearTerminal()">清空</button>
+        </div>
+        <div class="terminal-body" id="terminalBody">
+          <div class="terminal-line system">
+            <span class="terminal-time">00:00:00</span>
+            <span class="terminal-content">数据工厂初始化完成，等待操作...</span>
           </div>
-          <div style="background:rgba(0,0,0,.2);padding:12px;border-radius:6px;text-align:center;">
-            <div style="font-size:24px;color:var(--gold);" id="summaryRating">-</div>
-            <div style="font-size:11px;color:var(--text-dim);">评分均值</div>
-          </div>
+        </div>
+      </div>
+
+      <!-- Data Preview Panel -->
+      <div class="panel">
+        <h3><span class="dot" style="background:var(--purple)"></span>数据预览</h3>
+
+        <div id="previewContent" style="color:var(--text-dim);font-size:13px;text-align:center;padding:30px;">
+          配置完成后点击"生成数据"<br>
+          数据将包含: 品类、价格、评分、评论数、用户年龄、用户性别、用户地区等字段
         </div>
 
-        <div id="previewTable" style="max-height:300px;overflow-y:auto;">
-          <!-- 表格数据 -->
+        <div id="dataSummary" style="display:none;">
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="summary-value" id="summaryCount">0</div>
+              <div class="summary-label">数据条数</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value" id="summaryPrice">-</div>
+              <div class="summary-label">价格均值</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value" id="summaryRating">-</div>
+              <div class="summary-label">评分均值</div>
+            </div>
+          </div>
+
+          <div class="preview-table-wrap" id="previewTable"></div>
         </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="process-section" id="actionBtns" style="display:none;">
+        <button class="btn btn-process" onclick="downloadData()">下载文件</button>
+        <button class="btn btn-process" style="margin-left:12px;border-color:var(--green);" onclick="exportToHejinshun()">导出到和金顺平台</button>
       </div>
     </div>
   </div>
@@ -354,6 +659,59 @@ body::before {
 let currentMode = 'structured';
 let generateRunning = false;
 
+// ─── Timestamp ───
+function getTimestamp() {
+  return new Date().toTimeString().slice(0, 8);
+}
+
+// ─── Terminal Logging ───
+function terminalLog(msg, type = 'info') {
+  const body = document.getElementById('terminalBody');
+  const line = document.createElement('div');
+  line.className = `terminal-line ${type}`;
+
+  const time = document.createElement('span');
+  time.className = 'terminal-time';
+  time.textContent = getTimestamp();
+
+  const content = document.createElement('span');
+  content.className = 'terminal-content';
+  content.innerHTML = formatTerminalMessage(msg, type);
+
+  line.appendChild(time);
+  line.appendChild(content);
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function formatTerminalMessage(msg, type) {
+  const prefixes = {
+    'info': '<span class="comment"># </span>',
+    'success': '<span class="string">[OK] </span>',
+    'warning': '<span class="keyword">[WARN] </span>',
+    'error': '<span class="keyword">[ERR] </span>',
+    'process': '<span class="function">[RUN] </span>',
+    'system': '<span class="comment">[SYS] </span>'
+  };
+
+  let formatted = msg
+    .replace(/(\d+)/g, '<span class="number">$1</span>')
+    .replace(/(https?:\/\/[^\s]+)/g, '<span class="string">$1</span>')
+    .replace(/(漆器|京东|什么值得买|淘宝|美妆|家居|数码|手机|电脑|家电|服装|食品|图书)/g, '<span class="keyword">$1</span>');
+
+  return (prefixes[type] || '') + formatted;
+}
+
+function clearTerminal() {
+  const body = document.getElementById('terminalBody');
+  body.innerHTML = `
+    <div class="terminal-line system">
+      <span class="terminal-time">${getTimestamp()}</span>
+      <span class="terminal-content">终端已清空，等待操作...</span>
+    </div>`;
+}
+
+// ─── Mode Switch ───
 function switchMode(mode) {
   currentMode = mode;
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
@@ -363,17 +721,20 @@ function switchMode(mode) {
   document.getElementById('naturalMode').style.display = mode === 'natural' ? 'block' : 'none';
 }
 
+// ─── Gender Slider ───
 function updateGenderDisplay() {
   const value = document.getElementById('genderSlider').value;
   document.getElementById('maleRatioDisplay').textContent = value;
   document.getElementById('femaleRatioDisplay').textContent = 100 - value;
 }
 
+// ─── Example Tags ───
 function useExample(text) {
   document.getElementById('conclusionInput').value = text;
   document.getElementById('parsedResult').style.display = 'none';
 }
 
+// ─── Collect Structured Params ───
 function collectStructuredParams() {
   return {
     category: document.getElementById('categorySelect').value || null,
@@ -389,6 +750,23 @@ function collectStructuredParams() {
   };
 }
 
+// ─── Update Progress ───
+function updateProgress(current, total, title) {
+  const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = percent + '%';
+  document.getElementById('progressPercent').textContent = percent + '%';
+  if (title) document.getElementById('progressTitle').textContent = title;
+}
+
+// ─── Update Stat Cards ───
+function updateStatCards(count, price, rating, status) {
+  if (count !== undefined) document.getElementById('statCount').textContent = count;
+  if (price !== undefined) document.getElementById('statPrice').textContent = price;
+  if (rating !== undefined) document.getElementById('statRating').textContent = rating;
+  if (status !== undefined) document.getElementById('statStatus').textContent = status;
+}
+
+// ─── Generate Data ───
 async function generateData() {
   if (generateRunning) return;
 
@@ -398,10 +776,11 @@ async function generateData() {
   if (currentMode === 'structured') {
     params = collectStructuredParams();
     endpoint = '/api/generate-structured';
+    terminalLog(`结构化模式 - 品类: ${params.category || '全部'}, 数量: ${params.count}`, 'info');
   } else {
     const conclusion = document.getElementById('conclusionInput').value.trim();
     if (!conclusion) {
-      alert('请输入结论语句');
+      terminalLog('请输入结论语句', 'error');
       return;
     }
     params = {
@@ -410,13 +789,22 @@ async function generateData() {
       format: document.getElementById('formatSelect').value
     };
     endpoint = '/api/generate-from-conclusion';
+    terminalLog(`自然语言模式 - 结论: ${conclusion.slice(0, 40)}...`, 'info');
   }
 
+  // UI state
   document.getElementById('generateBtn').disabled = true;
+  document.getElementById('resetBtn').style.display = 'inline-block';
   document.getElementById('statusDot').classList.add('running');
   document.getElementById('statusMsg').textContent = '正在生成...';
   document.getElementById('actionBtns').style.display = 'none';
+  document.getElementById('progressSection').style.display = 'block';
+  updateProgress(0, 0, '准备生成...');
+  updateStatCards(undefined, undefined, undefined, '生成中');
   generateRunning = true;
+
+  terminalLog(`发送生成请求...`, 'process');
+  terminalLog(`目标数量: ${params.count}, 格式: ${params.format}`, 'info');
 
   try {
     const resp = await fetch(endpoint, {
@@ -427,29 +815,48 @@ async function generateData() {
     const data = await resp.json();
 
     if (data.error) {
-      alert('错误: ' + data.error);
-      generateRunning = false;
-      document.getElementById('statusDot').classList.remove('running');
-      document.getElementById('statusMsg').textContent = '就绪';
-      document.getElementById('generateBtn').disabled = false;
+      terminalLog(data.error, 'error');
+      resetUI();
       return;
     }
 
-    // 如果是自然语言模式，显示解析结果
+    terminalLog('生成任务已启动', 'success');
+
+    // Show parsed result for natural language mode
     if (currentMode === 'natural' && data.parsed) {
       showParsedResult(data.parsed);
     }
 
     pollStatus();
   } catch (e) {
-    alert('请求失败: ' + e.message);
-    generateRunning = false;
-    document.getElementById('statusDot').classList.remove('running');
-    document.getElementById('statusMsg').textContent = '就绪';
-    document.getElementById('generateBtn').disabled = false;
+    terminalLog('请求失败: ' + e.message, 'error');
+    resetUI();
   }
 }
 
+// ─── Reset Task ───
+async function resetTask() {
+  try {
+    await fetch('/api/reset', { method: 'POST' });
+    terminalLog('状态已重置', 'warning');
+    resetUI();
+    updateStatCards(0, '-', '-', '就绪');
+  } catch (e) {
+    terminalLog('重置失败: ' + e.message, 'error');
+  }
+}
+
+// ─── Reset UI State ───
+function resetUI() {
+  generateRunning = false;
+  document.getElementById('generateBtn').disabled = false;
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('statusDot').classList.remove('running');
+  document.getElementById('statusMsg').textContent = '就绪';
+  document.getElementById('progressSection').style.display = 'none';
+}
+
+// ─── Show Parsed Result ───
 function showParsedResult(parsed) {
   let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
   if (parsed.category) html += `<span>品类: <b style="color:var(--cyan)">${parsed.category}</b></span>`;
@@ -463,17 +870,27 @@ function showParsedResult(parsed) {
 
   document.getElementById('parsedContent').innerHTML = html;
   document.getElementById('parsedResult').style.display = 'block';
+  terminalLog(`结论解析完成 - 置信度: ${(parsed.confidence * 100).toFixed(0)}%`, 'success');
 }
 
+// ─── Poll Status ───
 async function pollStatus() {
   try {
     const resp = await fetch('/api/status');
     const status = await resp.json();
 
     document.getElementById('statusMsg').textContent = status.message;
+
+    // Log status messages
+    const msgType = status.message.includes('出错') ? 'error' :
+                    status.message.includes('完成') ? 'success' : 'process';
+    terminalLog(status.message, msgType);
+
     if (status.total > 0) {
       const pct = Math.round((status.current / status.total) * 100);
       document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressPercent').textContent = pct + '%';
+      document.getElementById('progressTitle').textContent = `生成进度: ${status.current}/${status.total}`;
     }
 
     if (status.running) {
@@ -484,31 +901,48 @@ async function pollStatus() {
       document.getElementById('generateBtn').disabled = false;
 
       if (status.output_file) {
-        document.getElementById('actionBtns').style.display = 'flex';
+        document.getElementById('actionBtns').style.display = 'block';
         document.getElementById('summaryCount').textContent = status.current;
         document.getElementById('dataSummary').style.display = 'block';
         document.getElementById('previewContent').style.display = 'none';
+
+        updateStatCards(status.current, undefined, undefined, '完成');
+        updateProgress(status.current, status.total, '生成完成');
+
+        terminalLog(`数据生成完成，共 ${status.current} 条记录`, 'success');
+        terminalLog(`输出文件: ${status.output_file}`, 'info');
+      } else {
+        resetUI();
       }
     }
   } catch (e) {
-    console.error('Poll failed', e);
+    terminalLog('状态查询失败: ' + e.message, 'error');
+    resetUI();
   }
 }
 
+// ─── Download ───
 function downloadData() {
+  terminalLog('开始下载文件...', 'process');
   window.location.href = '/api/download';
+  setTimeout(() => terminalLog('下载请求已发送', 'success'), 500);
 }
 
+// ─── Export to Hejinshun ───
 async function exportToHejinshun() {
+  terminalLog('正在导出到和金顺平台...', 'process');
   try {
     const resp = await fetch('/api/export', { method: 'POST' });
     const data = await resp.json();
     if (data.success) {
+      terminalLog(`导出成功！新增 ${data.new_count} 条，总计 ${data.total_count} 条`, 'success');
       alert('已导出到和金顺平台！\n启动和金顺仪表盘即可查看。');
     } else {
+      terminalLog(data.error || '导出失败', 'error');
       alert(data.error || '导出失败');
     }
   } catch (e) {
+    terminalLog('导出失败: ' + e.message, 'error');
     alert('导出失败: ' + e.message);
   }
 }
