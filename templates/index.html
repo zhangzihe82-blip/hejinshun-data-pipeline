@@ -749,9 +749,9 @@ function drawChinaMap(){
       type:'effectScatter',
       coordinateSystem:'geo',
       data:cityData,
-      symbolSize:function(v){return Math.max(8,Math.sqrt(v[2])*4);},
+      symbolSize:function(v){return Math.max(6,Math.min(26,Math.sqrt(v[2])*2.5));},
       showEffectOn:'render',
-      rippleEffect:{brushType:'stroke',scale:3.5,period:6,color:'#0071e3'},
+      rippleEffect:{brushType:'stroke',scale:2.4,period:7,color:'#0071e3'},
       label:{show:true,position:'right',formatter:'{b}',fontSize:10,color:'#1d1d1f',distance:8},
       itemStyle:{color:'#0071e3',shadowBlur:10,shadowColor:'rgba(0,113,227,.4)'},
       emphasis:{itemStyle:{color:'#ff3b30',shadowBlur:20},scale:1.4},
@@ -762,6 +762,9 @@ function drawChinaMap(){
 
 function extractProvince(r){
   if(!r)return'未知';
+  // City→Province mapping for factory-generated data
+  var cityMap={'广州':'广东','深圳':'广东','杭州':'浙江','南京':'江苏','苏州':'江苏','成都':'四川','武汉':'湖北','厦门':'福建','青岛':'山东','大连':'辽宁','宁波':'浙江','无锡':'江苏','东莞':'广东','佛山':'广东','温州':'浙江','福州':'福建','济南':'山东','西安':'陕西','合肥':'安徽','郑州':'河南','长沙':'湖南','昆明':'云南','贵阳':'贵州','南宁':'广西','哈尔滨':'黑龙江','长春':'吉林','沈阳':'辽宁','石家庄':'河北','太原':'山西','海口':'海南','拉萨':'西藏','西宁':'青海','银川':'宁夏','兰州':'甘肃','乌鲁木齐':'新疆','呼和浩特':'内蒙古'};
+  if(cityMap[r])return cityMap[r];
   var p=r.replace(/省|市|自治区|壮族|回族|维吾尔|特别行政区/g,'').trim();
   var sp=['北京','上海','天津','重庆','广东','浙江','江苏','山东','河南','四川','湖北','湖南','福建','安徽','河北','陕西','辽宁','江西','广西','山西','云南','贵州','吉林','甘肃','内蒙古','海南','新疆','宁夏','青海','西藏','黑龙江','台湾','香港','澳门'];
   for(var i=0;i<sp.length;i++){if(p.indexOf(sp[i])===0)return sp[i];}

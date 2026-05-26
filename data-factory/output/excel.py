@@ -25,6 +25,7 @@ class ExcelWriter:
         'product_url': 'Product URL',
         'category': 'Category',
         'scraped_at': 'Scraped At',
+        'created_at': 'Created At',
         # 新增用户画像字段
         'user_age': 'User Age',
         'user_gender': 'User Gender',
@@ -36,7 +37,7 @@ class ExcelWriter:
         'name', 'price', 'original_price', 'platform',
         'rating', 'comment_count', 'category',
         'user_age', 'user_gender', 'user_region',
-        'image_url', 'product_url', 'scraped_at'
+        'image_url', 'product_url', 'scraped_at', 'created_at'
     ]
 
     def __init__(self):

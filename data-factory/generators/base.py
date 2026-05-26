@@ -153,6 +153,12 @@ class DataGenerator:
             value = self._generate_field(field_name, field_config, record, index)
             record[field_name] = value
 
+        # 后处理：解析 same_as 引用
+        for field_name, field_config in self.fields_config.items():
+            if field_config.get('method') == 'same_as':
+                source = field_config.get('source', '')
+                record[field_name] = record.get(source, '')
+
         return record
 
     def _generate_field(self, field_name: str, config: Dict[str, Any],
@@ -306,6 +312,13 @@ class DataGenerator:
 
     def _generate_datetime(self, config: Dict[str, Any]) -> str:
         """生成日期时间字段"""
+        method = config.get('method', 'uniform_range')
+
+        if method == 'same_as':
+            # 使用同一条记录中另一个字段的值
+            # 这里返回 None，在 _generate_record 中特殊处理
+            return None
+
         start_str = config.get('start', '2024-01-01')
         end_str = config.get('end', '2024-12-31')
 

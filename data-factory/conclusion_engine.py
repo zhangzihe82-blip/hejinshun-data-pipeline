@@ -56,6 +56,7 @@ class Conclusion:
     demographic: UserDemographic = field(default_factory=UserDemographic)
     price_min: float = None
     price_max: float = None
+    regions: List[str] = field(default_factory=list)  # 指定地区列表
 
 
 class ConclusionParser:
@@ -79,6 +80,25 @@ class ConclusionParser:
         '京东自营': ['京东自营', '自营'],
         '京东': ['京东', 'JD'],
         '什么值得买': ['什么值得买', '值得买', 'SMZDM'],
+    }
+
+    # 地区关键词映射
+    REGION_KEYWORDS = {
+        '江浙沪': ['上海', '南京', '苏州', '杭州', '宁波', '无锡', '常州', '南通', '温州', '嘉兴', '绍兴', '金华', '台州', '湖州', '镇江', '扬州', '泰州', '盐城', '徐州'],
+        '珠三角': ['广州', '深圳', '东莞', '佛山', '珠海', '中山', '惠州', '江门', '肇庆'],
+        '京津冀': ['北京', '天津', '石家庄', '唐山', '保定', '廊坊', '秦皇岛', '邯郸'],
+        '长三角': ['上海', '南京', '苏州', '杭州', '宁波', '无锡', '合肥'],
+        '成渝': ['成都', '重庆'],
+        '北京': ['北京'],
+        '上海': ['上海'],
+        '广州': ['广州'],
+        '深圳': ['深圳'],
+        '杭州': ['杭州'],
+        '南京': ['南京'],
+        '苏州': ['苏州'],
+        '成都': ['成都'],
+        '武汉': ['武汉'],
+        '重庆': ['重庆'],
     }
 
     METRICS = {
@@ -155,8 +175,8 @@ class ConclusionParser:
             conclusion.price_min = float(price_match.group(1))
             conclusion.price_max = float(price_match.group(2))
 
-        # 提取年龄范围
-        age_pattern = r'年龄[:：]?\s*(\d+)[~-](\d+)岁?'
+        # 提取年龄范围 (支持"年龄在/为/是25-30岁"等多种表达)
+        age_pattern = r'年龄(?:在|为|是|约|大约|[:：])?\s*(\d+)[~-](\d+)岁?'
         age_match = re.search(age_pattern, text)
         if age_match:
             conclusion.demographic.age_min = int(age_match.group(1))
@@ -177,6 +197,13 @@ class ConclusionParser:
             conclusion.demographic.male_ratio = ratio
             conclusion.demographic.female_ratio = 1 - ratio
 
+        # 提取地区信息
+        for region_key, cities in self.REGION_KEYWORDS.items():
+            if region_key in text:
+                conclusion.regions.extend(cities)
+        # 去重
+        conclusion.regions = list(set(conclusion.regions)) if conclusion.regions else []
+
         # 计算置信度
         confidence = 0.0
         if conclusion.category: confidence += 0.2
@@ -185,6 +212,7 @@ class ConclusionParser:
         if conclusion.platform or conclusion.comparison: confidence += 0.2
         if conclusion.price_min is not None: confidence += 0.1
         if conclusion.demographic.age_min != 18 or conclusion.demographic.age_max != 60: confidence += 0.1
+        if conclusion.regions: confidence += 0.1
         conclusion.confidence = min(1.0, confidence)
 
         return conclusion
@@ -222,6 +250,13 @@ class ConclusionParser:
         # 平台
         if params.get('platform'):
             conclusion.platform = params['platform']
+
+        # 地区
+        if params.get('regions'):
+            if isinstance(params['regions'], list):
+                conclusion.regions = params['regions']
+            elif isinstance(params['regions'], str):
+                conclusion.regions = [r.strip() for r in params['regions'].split(',') if r.strip()]
 
         # 指标和方向
         if params.get('metric'):
@@ -500,7 +535,7 @@ class ConclusionDrivenGenerator:
             'user_region': {
                 'type': 'string',
                 'method': 'choice',
-                'choices': ['北京', '上海', '广州', '深圳', '杭州', '成都', '武汉', '南京', '苏州', '重庆']
+                'choices': ['北京', '上海', '广州', '深圳', '杭州', '成都', '武汉', '南京', '苏州', '重庆', '宁波', '无锡', '厦门', '青岛', '大连', '西安', '长沙', '福州', '合肥', '郑州', '昆明', '南宁', '沈阳', '哈尔滨']
             },
             'image_url': {
                 'type': 'string',
@@ -517,6 +552,11 @@ class ConclusionDrivenGenerator:
                 'method': 'uniform_range',
                 'start': '2024-01-01',
                 'end': '2024-12-31'
+            },
+            'created_at': {
+                'type': 'datetime',
+                'method': 'same_as',
+                'source': 'scraped_at'
             }
         }
 
@@ -527,16 +567,19 @@ class ConclusionDrivenGenerator:
 
         # 如果结论指定了价格区间
         if conclusion.price_min is not None or conclusion.price_max is not None:
-            base_fields['price']['min'] = conclusion.price_min or 1
-            base_fields['price']['max'] = conclusion.price_max or 50000
-            # 根据价格区间调整均值
-            price_mid = (base_fields['price']['min'] + base_fields['price']['max']) / 2
-            if price_mid > 1000:
-                base_fields['price']['mean'] = 7.5
-            elif price_mid > 100:
-                base_fields['price']['mean'] = 5.5
+            pmin = conclusion.price_min or 1
+            pmax = conclusion.price_max or 50000
+            base_fields['price']['min'] = pmin
+            base_fields['price']['max'] = pmax
+            # 根据价格区间调整 lognormal mean 和 sigma
+            import math
+            price_mid = (pmin + pmax) / 2
+            base_fields['price']['mean'] = math.log(price_mid) if price_mid > 0 else 5.5
+            # 缩小 sigma 使大部分值落在区间内: sigma ≈ (log(pmax)-log(pmin))/4
+            if pmax > pmin and pmin > 0:
+                base_fields['price']['sigma'] = max(0.15, (math.log(pmax) - math.log(pmin)) / 4)
             else:
-                base_fields['price']['mean'] = 4.0
+                base_fields['price']['sigma'] = 0.5
 
         # 如果结论指定了年龄范围
         demo = conclusion.demographic
@@ -553,6 +596,26 @@ class ConclusionDrivenGenerator:
             male_weight = demo.male_ratio / total
             female_weight = demo.female_ratio / total
             base_fields['user_gender']['weights'] = [male_weight, female_weight]
+
+        # 如果结论指定了地区，调整地区分布
+        if conclusion.regions:
+            # 指定地区权重占80%，其余均匀分配
+            all_regions = base_fields['user_region']['choices']
+            region_weights = {}
+            for r in conclusion.regions:
+                if r in all_regions:
+                    region_weights[r] = 0.8 / len(conclusion.regions)
+            # 剩余权重均匀分配给其他地区
+            remaining_weight = 0.2 / (len(all_regions) - len(region_weights)) if len(all_regions) > len(region_weights) else 0
+            weights = []
+            for r in all_regions:
+                if r in region_weights:
+                    weights.append(region_weights[r])
+                else:
+                    weights.append(max(0.005, remaining_weight))
+            total = sum(weights)
+            weights = [w / total for w in weights]
+            base_fields['user_region']['weights'] = weights
 
         # 如果结论指定了品类，调整品类分布
         if conclusion.category:
@@ -602,6 +665,7 @@ class ConclusionDrivenGenerator:
                 'price_range': [conclusion.price_min, conclusion.price_max] if conclusion.price_min is not None else None,
                 'age_range': [conclusion.demographic.age_min, conclusion.demographic.age_max],
                 'gender_ratio': {'male': conclusion.demographic.male_ratio, 'female': conclusion.demographic.female_ratio},
+                'regions': conclusion.regions,
                 'confidence': conclusion.confidence
             }
         }
@@ -629,6 +693,10 @@ def generate_from_conclusion(conclusion_text: str, count: int = 1000, seed: int 
 - 平台: {conclusion.platform or '未指定'}
 - 指标: {conclusion.metric or '未指定'}
 - 趋势: {conclusion.direction.value if conclusion.direction else '未指定'}
+- 价格: {f'{conclusion.price_min}-{conclusion.price_max}元' if conclusion.price_min is not None else '未指定'}
+- 年龄: {f'{conclusion.demographic.age_min}-{conclusion.demographic.age_max}岁' if conclusion.demographic.age_min != 18 or conclusion.demographic.age_max != 60 else '未指定'}
+- 性别: {f'男{conclusion.demographic.male_ratio:.0%} 女{conclusion.demographic.female_ratio:.0%}' if conclusion.demographic.male_ratio != 0.5 else '未指定'}
+- 地区: {', '.join(conclusion.regions[:8]) + ('...' if len(conclusion.regions)>8 else '') if conclusion.regions else '未指定'}
 - 置信度: {conclusion.confidence:.0%}
 
 数据将生成 {count} 条记录，支持以上结论。
