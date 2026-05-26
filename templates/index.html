@@ -55,13 +55,22 @@ body {
   overflow-x: hidden; position: relative;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
+/* Grain texture overlay */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat; background-size: 180px 180px; opacity: .028; mix-blend-mode: multiply;
+}
 
 /* ═══ BG ORBS — Parallax ═══ */
-.bg-orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(130px); opacity: 0.26; will-change: transform; }
-.bg-orb--blue { width: 560px; height: 560px; background: radial-gradient(circle, rgba(0,113,227,.35), transparent); top: -10%; left: -12%; }
-.bg-orb--purple { width: 480px; height: 480px; background: radial-gradient(circle, rgba(175,82,222,.3), transparent); bottom: -8%; right: -10%; }
-.bg-orb--teal { width: 400px; height: 400px; background: radial-gradient(circle, rgba(90,200,250,.25), transparent); top: 50%; left: 60%; }
-.bg-orb--warm { width: 380px; height: 380px; background: radial-gradient(circle, rgba(255,149,0,.2), transparent); top: 28%; right: 12%; }
+.bg-orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(120px); opacity: 0.22; will-change: transform; transition: opacity 2s ease; }
+.bg-orb--blue { width: 620px; height: 620px; background: radial-gradient(circle at 40% 40%, rgba(0,113,227,.4), transparent 70%); top: -12%; left: -14%; }
+.bg-orb--purple { width: 520px; height: 520px; background: radial-gradient(circle at 55% 45%, rgba(175,82,222,.32), transparent 70%); bottom: -10%; right: -12%; }
+.bg-orb--teal { width: 440px; height: 440px; background: radial-gradient(circle at 45% 50%, rgba(90,200,250,.28), transparent 70%); top: 50%; left: 55%; }
+.bg-orb--warm { width: 400px; height: 400px; background: radial-gradient(circle at 50% 40%, rgba(255,149,0,.22), transparent 70%); top: 25%; right: 10%; }
+.bg-orb--green { width: 350px; height: 350px; background: radial-gradient(circle at 60% 55%, rgba(52,199,89,.18), transparent 70%); top: 70%; left: -5%; }
+.bg-orb--pink { width: 380px; height: 380px; background: radial-gradient(circle at 35% 50%, rgba(255,45,85,.14), transparent 70%); top: 15%; left: 35%; }
+.bg-orb--indigo { width: 300px; height: 300px; background: radial-gradient(circle at 50% 50%, rgba(88,86,214,.16), transparent 70%); bottom: 5%; right: 35%; }
 
 /* ═══ REVEAL ═══ */
 .reveal { opacity: 0; transform: translateY(40px); transition: opacity var(--duration) var(--ease-out), transform var(--duration) var(--ease-out); }
@@ -395,6 +404,9 @@ tbody tr:hover { background: rgba(0,0,0,.015); }
 <div class="bg-orb bg-orb--purple" id="orbPurple"></div>
 <div class="bg-orb bg-orb--teal" id="orbTeal"></div>
 <div class="bg-orb bg-orb--warm" id="orbWarm"></div>
+<div class="bg-orb bg-orb--green" id="orbGreen"></div>
+<div class="bg-orb bg-orb--pink" id="orbPink"></div>
+<div class="bg-orb bg-orb--indigo" id="orbIndigo"></div>
 
 <div class="toast-container" id="toastContainer"></div>
 
@@ -589,7 +601,7 @@ tbody tr:hover { background: rgba(0,0,0,.015); }
 // BG ORBS — Parallax scroll
 // ═══════════════════════════════════════════
 (function(){
-  var orbs=[{el:document.getElementById('orbBlue'),speed:.015},{el:document.getElementById('orbPurple'),speed:.035},{el:document.getElementById('orbTeal'),speed:.025},{el:document.getElementById('orbWarm'),speed:.03}];
+  var orbs=[{el:document.getElementById('orbBlue'),speed:.015},{el:document.getElementById('orbPurple'),speed:.04},{el:document.getElementById('orbTeal'),speed:.025},{el:document.getElementById('orbWarm'),speed:.032},{el:document.getElementById('orbGreen'),speed:.02},{el:document.getElementById('orbPink'),speed:.028},{el:document.getElementById('orbIndigo'),speed:.036}];
   var ticking=false;
   function update(){var sy=window.pageYOffset||document.documentElement.scrollTop;orbs.forEach(function(o){if(!o.el)return;o.el.style.transform='translateY('+(-sy*o.speed)+'px)';});ticking=false;}
   window.addEventListener('scroll',function(){if(!ticking){requestAnimationFrame(update);ticking=true;}},{passive:true});
@@ -600,7 +612,7 @@ tbody tr:hover { background: rgba(0,0,0,.015); }
 // SCROLL REVEAL
 // ═══════════════════════════════════════════
 (function(){
-  var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');}else{e.target.classList.remove('visible');}});},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
   document.querySelectorAll('.reveal,.reveal-scale,.reveal-left').forEach(function(el){obs.observe(el);});
   window._revealObserver=obs;
 })();
@@ -867,42 +879,52 @@ function refreshAllCharts(){
 }
 function drawPlatformPie(){
   var m={};products.forEach(function(p){var k=p.platform||'未知';m[k]=(m[k]||0)+1;});
-  charts.platformPie.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;'},series:[{type:'pie',radius:['44%','74%'],center:['50%','52%'],roseType:'area',itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},label:{color:'#86868b',fontSize:10},animationType:'scale',animationEasing:'elasticOut',animationDelay:function(i){return i*100;},data:Object.entries(m).map(function(a){return{name:a[0],value:a[1]};}),color:chartColors}]},true);
+  charts.platformPie.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;',formatter:function(p){return'<div style="font-weight:600;font-size:14px;margin-bottom:6px;">'+p.name+'</div><div style="color:#0071e3;font-size:20px;font-weight:700;">'+p.percent+'%</div><div style="color:#86868b;font-size:11px;margin-top:2px;">'+p.value+' 件</div>';}},series:[{type:'pie',radius:['44%','74%'],center:['50%','52%'],roseType:'area',itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},label:{color:'#86868b',fontSize:10},animationType:'scale',animationEasing:'elasticOut',animationDelay:function(i){return i*100;},data:Object.entries(m).map(function(a){return{name:a[0],value:a[1]};}),color:chartColors}]},true);
 }
 function drawPlatformAvg(){
   var m={};products.forEach(function(p){if(!p.platform||p.price==null||p.price<=0)return;if(!m[p.platform])m[p.platform]={sum:0,cnt:0};m[p.platform].sum+=p.price;m[p.platform].cnt+=1;});
   var e=Object.entries(m).map(function(a){return{name:a[0],value:+(a[1].sum/a[1].cnt).toFixed(1)};}).sort(function(a,b){return b.value-a.value;});
-  charts.platformAvg.setOption({tooltip:mt(),xAxis:{type:'category',data:e.map(function(x){return x.name;}),axisLabel:cts,axisLine:cal},yAxis:{type:'value',name:'均价(元)',nameTextStyle:cts,axisLabel:cts,splitLine:csl},series:[{type:'bar',data:e.map(function(x){return x.value;}),barMaxWidth:32,animationDelay:function(i){return i*80;},itemStyle:{borderRadius:[8,8,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#af52de'},{offset:1,color:'#0071e3'}])}}],grid:{left:46,right:10,top:10,bottom:28}},true);
+  charts.platformAvg.setOption({tooltip:mt(),xAxis:{type:'category',data:e.map(function(x){return x.name;}),axisLabel:cts,axisLine:cal},yAxis:{type:'value',name:'均价(元)',nameTextStyle:cts,axisLabel:{color:'#86868b',fontSize:10,formatter:function(v){return'¥'+Math.round(v);}},splitLine:csl},series:[{type:'bar',data:e.map(function(x){return x.value;}),barMaxWidth:32,animationDelay:function(i){return i*80;},itemStyle:{borderRadius:[8,8,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#af52de'},{offset:1,color:'#0071e3'}])}}],grid:{left:46,right:10,top:10,bottom:28}},true);
 }
 function drawPriceBar(){
   var pr=products.map(function(p){return p.price;}).filter(function(p){return p!=null&&p>0;});if(!pr.length)return;
-  var min=Math.floor(Math.min.apply(null,pr)/10)*10,max=Math.ceil(Math.max.apply(null,pr)/10)*10,step=Math.max(Math.ceil((max-min)/14),1),buckets=[];
-  for(var i=min;i<max;i+=step)buckets.push({name:i+'-'+(i+step),count:0});
-  if(!buckets.length)buckets.push({name:min+'-'+max,count:0});
-  pr.forEach(function(p){for(var i=0;i<buckets.length;i++){if(p>=min+i*step&&p<min+(i+1)*step){buckets[i].count++;break;}if(i===buckets.length-1)buckets[i].count++;}});
-  charts.priceBar.setOption({tooltip:mt(),xAxis:{type:'category',data:buckets.map(function(b){return b.name;}),axisLabel:{color:'#86868b',fontSize:9,rotate:25},axisLine:cal},yAxis:{type:'value',name:'数量',nameTextStyle:cts,axisLabel:cts,splitLine:csl,minInterval:1},series:[{type:'bar',data:buckets.map(function(b){return b.count;}),barMaxWidth:28,animationDelay:function(i){return i*60;},itemStyle:{borderRadius:[8,8,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#5ac8fa'},{offset:1,color:'#0071e3'}])}}],grid:{left:36,right:10,top:10,bottom:38}},true);
+  pr.sort(function(a,b){return a-b;});
+  var min=pr[0],max=pr[pr.length-1];
+  if(min===max){min=Math.max(0,min*0.8);max=max*1.2;}
+  // Calculate nice step: choose from standard sizes for ~10 evenly-spaced buckets
+  var range=max-min,niceSteps=[10,20,50,100,200,500,1000,2000,5000],rawStep=range/10,step=niceSteps[0];
+  for(var i=0;i<niceSteps.length;i++){if(niceSteps[i]>=rawStep){step=niceSteps[i];break;}}
+  if(rawStep>niceSteps[niceSteps.length-1])step=niceSteps[niceSteps.length-1];
+  var niceMin=Math.floor(min/step)*step,niceMax=Math.ceil(max/step)*step;
+  // Build evenly-spaced integer buckets
+  var buckets=[];
+  for(var i=niceMin;i<niceMax;i+=step)buckets.push({name:i+'-'+(i+step),low:i,high:i+step,count:0});
+  if(!buckets.length)buckets.push({name:niceMin+'-'+niceMax,low:niceMin,high:niceMax,count:0});
+  pr.forEach(function(p){for(var i=0;i<buckets.length;i++){var isLast=i===buckets.length-1;if(p>=buckets[i].low&&(isLast?p<=buckets[i].high:p<buckets[i].high)){buckets[i].count++;break;}}});
+  var intLabel={color:'#86868b',fontSize:10,formatter:function(v){return Math.round(v);}};
+  charts.priceBar.setOption({tooltip:mt(),xAxis:{type:'category',data:buckets.map(function(b){return b.name;}),axisLabel:{color:'#86868b',fontSize:9,rotate:25},axisLine:cal},yAxis:{type:'value',name:'数量',nameTextStyle:cts,axisLabel:intLabel,splitLine:csl,minInterval:1},series:[{type:'bar',data:buckets.map(function(b){return b.count;}),barMaxWidth:28,animationDelay:function(i){return i*60;},itemStyle:{borderRadius:[8,8,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#5ac8fa'},{offset:1,color:'#0071e3'}])}}],grid:{left:36,right:10,top:10,bottom:38}},true);
 }
 function drawPriceRange(){
   var pr=products.map(function(p){return p.price;}).filter(function(p){return p!=null&&p>0;});
   var ranges=[{name:'0-50元',min:0,max:50},{name:'50-100元',min:50,max:100},{name:'100-200元',min:100,max:200},{name:'200-500元',min:200,max:500},{name:'500元以上',min:500,max:Infinity}];
-  charts.priceRange.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;'},series:[{type:'pie',radius:['50%','76%'],center:['50%','52%'],animationType:'scale',animationEasing:'elasticOut',data:ranges.map(function(r){return{name:r.name,value:pr.filter(function(p){return p>=r.min&&p<r.max;}).length};}).filter(function(x){return x.value>0;}),label:{color:'#86868b',fontSize:10},itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:2},color:['#34c759','#0071e3','#ff9500','#ff3b30','#af52de']}]},true);
+  charts.priceRange.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;',formatter:function(p){return'<div style="font-weight:600;font-size:14px;margin-bottom:6px;">'+p.name+'</div><div style="color:#0071e3;font-size:20px;font-weight:700;">'+p.percent+'%</div><div style="color:#86868b;font-size:11px;margin-top:2px;">'+p.value+' 件</div>';}},series:[{type:'pie',radius:['50%','76%'],center:['50%','52%'],animationType:'scale',animationEasing:'elasticOut',data:ranges.map(function(r){return{name:r.name,value:pr.filter(function(p){return p>=r.min&&p<r.max;}).length};}).filter(function(x){return x.value>0;}),label:{color:'#86868b',fontSize:10},itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:2},color:['#34c759','#0071e3','#ff9500','#ff3b30','#af52de']}]},true);
 }
 function drawAgeDist(){
   var ag=products.map(function(p){return p.user_age;}).filter(function(p){return p!=null&&p>0;});
   if(!ag.length){charts.ageDist.setOption({title:{text:'暂无年龄数据',left:'center',top:'center',textStyle:{color:'#86868b',fontSize:13}}},true);return;}
   var ranges=[{name:'18-25岁',min:18,max:25},{name:'26-35岁',min:26,max:35},{name:'36-45岁',min:36,max:45},{name:'46-55岁',min:46,max:55},{name:'55岁以上',min:55,max:Infinity}];
-  charts.ageDist.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;'},series:[{type:'pie',radius:['42%','70%'],center:['50%','52%'],animationType:'scale',animationEasing:'elasticOut',data:ranges.map(function(r){return{name:r.name,value:ag.filter(function(a){return a>=r.min&&a<r.max;}).length};}).filter(function(x){return x.value>0;}),label:{color:'#86868b',fontSize:10},itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:2},color:['#ff9500','#0071e3','#af52de','#34c759','#ff3b30']}]},true);
+  charts.ageDist.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;',formatter:function(p){return'<div style="font-weight:600;font-size:14px;margin-bottom:6px;">'+p.name+'</div><div style="color:#0071e3;font-size:20px;font-weight:700;">'+p.percent+'%</div><div style="color:#86868b;font-size:11px;margin-top:2px;">'+p.value+' 人</div>';}},series:[{type:'pie',radius:['42%','70%'],center:['50%','52%'],animationType:'scale',animationEasing:'elasticOut',data:ranges.map(function(r){return{name:r.name,value:ag.filter(function(a){return a>=r.min&&a<r.max;}).length};}).filter(function(x){return x.value>0;}),label:{color:'#86868b',fontSize:10},itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:2},color:['#ff9500','#0071e3','#af52de','#34c759','#ff3b30']}]},true);
 }
 function drawGenderRatio(){
   var gd=products.map(function(p){return p.user_gender;}).filter(Boolean);if(!gd.length){charts.genderRatio.setOption({title:{text:'暂无性别数据',left:'center',top:'center',textStyle:{color:'#86868b',fontSize:13}}},true);return;}
   var male=gd.filter(function(g){return g==='男';}).length,female=gd.filter(function(g){return g==='女';}).length;
-  charts.genderRatio.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;'},series:[{type:'pie',radius:['50%','76%'],center:['50%','52%'],animationType:'scale',animationEasing:'elasticOut',data:[{name:'男性',value:male},{name:'女性',value:female}],label:{color:'#86868b',fontSize:11,formatter:'{b}\n{d}%'},itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:2},color:['#0071e3','#af52de']}]},true);
+  charts.genderRatio.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.95)',borderColor:'rgba(0,0,0,.08)',textStyle:{color:'#1d1d1f',fontSize:12},extraCssText:'box-shadow:0 4px 20px rgba(0,0,0,.08);border-radius:12px;',formatter:function(p){return'<div style="font-weight:600;font-size:14px;margin-bottom:6px;">'+p.name+'</div><div style="color:#0071e3;font-size:20px;font-weight:700;">'+p.percent+'%</div><div style="color:#86868b;font-size:11px;margin-top:2px;">'+p.value+' 人</div>';}},series:[{type:'pie',radius:['50%','76%'],center:['50%','52%'],animationType:'scale',animationEasing:'elasticOut',data:[{name:'男性',value:male},{name:'女性',value:female}],label:{color:'#86868b',fontSize:11,formatter:'{b}\n{d}%'},itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:2},color:['#0071e3','#af52de']}]},true);
 }
 function drawRegionDist(){
   var rg=products.map(function(p){return p.user_region;}).filter(Boolean);if(!rg.length){charts.regionDist.setOption({title:{text:'暂无地区数据',left:'center',top:'center',textStyle:{color:'#86868b',fontSize:13}}},true);return;}
   var m={};rg.forEach(function(r){var p=extractProvince(r);m[p]=(m[p]||0)+1;});
   var d=Object.entries(m).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
-  charts.regionDist.setOption({tooltip:mt(),xAxis:{type:'category',data:d.map(function(x){return x.name;}),axisLabel:cts,axisLine:cal},yAxis:{type:'value',name:'人数',nameTextStyle:cts,axisLabel:cts,splitLine:csl},series:[{type:'bar',data:d.map(function(x){return x.value;}),barMaxWidth:28,animationDelay:function(i){return i*80;},itemStyle:{borderRadius:[8,8,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#af52de'},{offset:1,color:'#0071e3'}])}}],grid:{left:46,right:20,top:10,bottom:28}},true);
+  charts.regionDist.setOption({tooltip:mt(),xAxis:{type:'category',data:d.map(function(x){return x.name;}),axisLabel:cts,axisLine:cal},yAxis:{type:'value',name:'人数',nameTextStyle:cts,axisLabel:{color:'#86868b',fontSize:10,formatter:function(v){return Math.round(v);}},splitLine:csl},series:[{type:'bar',data:d.map(function(x){return x.value;}),barMaxWidth:28,animationDelay:function(i){return i*80;},itemStyle:{borderRadius:[8,8,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#af52de'},{offset:1,color:'#0071e3'}])}}],grid:{left:46,right:20,top:10,bottom:28}},true);
 }
 
 // ═══════════════════════════════════════════
