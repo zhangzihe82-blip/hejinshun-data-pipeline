@@ -5,476 +5,312 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>数据制造工厂</title>
 <style>
+/* ═══ CYBER-TECH GLASSMORPHISM DESIGN SYSTEM ═══ */
 :root {
-  --bg-deep: #080e24;
-  --bg-panel: rgba(14, 24, 50, 0.85);
-  --border-glow: rgba(0, 168, 255, 0.15);
-  --accent: #00a8ff;
+  --bg-deep: #060b1a;
+  --bg-panel: rgba(10, 18, 40, 0.78);
+  --bg-panel-hover: rgba(14, 24, 52, 0.88);
+  --border-glow: rgba(0, 180, 255, 0.18);
+  --border-hover: rgba(0, 200, 255, 0.45);
+  --accent: #00b8ff;
+  --accent2: #00d4ff;
   --cyan: #00e5ff;
-  --purple: #7c4dff;
-  --warn: #ff6e40;
+  --purple: #885ef0;
+  --purple2: #a878ff;
+  --warn: #ff6b3d;
+  --warn2: #ff8c66;
   --green: #00e676;
+  --green2: #5cff7e;
   --gold: #ffd740;
-  --text: #d0d8e8;
-  --text-dim: #7a8ba0;
+  --gold2: #ffe57f;
+  --pink: #ff4081;
+  --text: #e0e6f0;
+  --text-dim: #6a7d9e;
+  --glass-blur: 14px;
+  --radius: 10px;
+  --shadow-glow: 0 0 24px rgba(0,180,255,0.12);
+  --transition-fast: 0.2s cubic-bezier(0.4,0,0.2,1);
+  --transition-smooth: 0.35s cubic-bezier(0.4,0,0.2,1);
 }
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;
+  background:var(--bg-deep);color:var(--text);min-height:100vh;overflow-x:hidden;
+}
+#starfield{position:fixed;inset:0;z-index:0;pointer-events:none}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:
+    linear-gradient(rgba(0,180,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,180,255,.03) 1px,transparent 1px);
+  background-size:50px 50px;
+  mask-image:radial-gradient(ellipse 70% 70% at 50% 40%,black 30%,transparent 70%);
+  -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 40%,black 30%,transparent 70%);
+}
+.scan-line{
+  position:fixed;inset:0;pointer-events:none;z-index:2;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,180,255,.008) 2px,rgba(0,180,255,.008) 4px);
+}
+.container{position:relative;z-index:10;max-width:1600px;margin:0 auto;padding:0 24px 30px}
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* HEADER */
+.header{
+  text-align:center;padding:20px 0 12px;
+  background:linear-gradient(180deg,rgba(8,16,36,.96) 30%,rgba(8,16,36,.4) 80%,transparent 100%);
+  border-bottom:1px solid var(--border-glow);margin-bottom:16px;
+}
+.header h1{
+  font-size:34px;font-weight:800;letter-spacing:8px;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--accent) 30%,var(--purple2) 60%,var(--pink) 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:gradientFlow 4s ease infinite;
+}
+@keyframes gradientFlow{0%,100%{background-position:0% center}50%{background-position:100% center}}
+.header .subtitle{font-size:12px;color:var(--text-dim);margin-top:4px;letter-spacing:3px;font-weight:300}
+.header .glow-line{height:1px;width:50%;margin:8px auto 0;background:linear-gradient(90deg,transparent,var(--accent),var(--purple),transparent);opacity:.5}
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: var(--bg-deep);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
+/* STAT CARDS */
+.stat-row{position:relative;z-index:10;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.stat-card{
+  background:var(--bg-panel);border:1px solid var(--border-glow);border-radius:var(--radius);
+  padding:18px 20px;text-align:center;backdrop-filter:blur(var(--glass-blur));
+  transition:var(--transition-smooth);position:relative;overflow:hidden;cursor:default;
 }
+.stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-glow);border-color:var(--border-hover);background:var(--bg-panel-hover)}
+.stat-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -20%,rgba(0,180,255,.08),transparent 70%);opacity:0;transition:opacity .35s}
+.stat-card:hover::before{opacity:1}
+.stat-card .card-accent{position:absolute;top:0;left:0;width:100%;height:3px;border-radius:3px 3px 0 0}
+.stat-card:nth-child(1) .card-accent{background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.stat-card:nth-child(2) .card-accent{background:linear-gradient(90deg,transparent,var(--purple2),transparent)}
+.stat-card:nth-child(3) .card-accent{background:linear-gradient(90deg,transparent,var(--gold2),transparent)}
+.stat-card:nth-child(4) .card-accent{background:linear-gradient(90deg,transparent,var(--green2),transparent)}
+.stat-card .label{font-size:12px;color:var(--text-dim);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}
+.stat-card .value{font-size:30px;font-weight:700;letter-spacing:1px}
+.stat-card:nth-child(1) .value{background:linear-gradient(135deg,var(--accent),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(2) .value{background:linear-gradient(135deg,var(--purple2),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(3) .value{background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(4) .value{background:linear-gradient(135deg,var(--green),var(--green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card .unit{font-size:12px;color:var(--text-dim);margin-top:2px}
 
-/* 背景网格 */
-body::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(0,168,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,168,255,.04) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
+/* LAYOUT */
+.main-grid{position:relative;z-index:10;display:grid;grid-template-columns:380px 1fr;gap:16px}
 
-.container {
-  position: relative; z-index: 1;
-  max-width: 1600px; margin: 0 auto; padding: 0 24px 30px;
+/* GLASS PANEL */
+.glass-panel{
+  background:var(--bg-panel);border:1px solid var(--border-glow);border-radius:var(--radius);
+  padding:18px;backdrop-filter:blur(var(--glass-blur));
+  transition:var(--transition-smooth);position:relative;overflow:hidden;
+  animation:panelFadeIn .5s cubic-bezier(0.4,0,0.2,1) both;
 }
+.glass-panel:hover{border-color:var(--border-hover);box-shadow:var(--shadow-glow)}
+.glass-panel:nth-child(1){animation-delay:.05s}
+.glass-panel:nth-child(2){animation-delay:.15s}
+@keyframes panelFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.glass-panel h3{font-size:13px;font-weight:600;color:var(--text);padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:1px}
+.glass-panel h3 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;box-shadow:0 0 8px currentColor}
 
-/* ─── Header ─── */
-.header {
-  position: relative; z-index: 1;
-  text-align: center; padding: 22px 0 10px;
-  background: linear-gradient(180deg, rgba(10,20,45,.95) 0%, transparent 100%);
-  border-bottom: 1px solid var(--border-glow);
-  margin-bottom: 16px;
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:500;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:9px 12px;border:1px solid var(--border-glow);border-radius:8px;
+  font-size:13px;outline:none;background:rgba(0,0,0,.35);color:var(--text);
+  transition:var(--transition-fast);
 }
-.header h1 {
-  font-size: 32px; font-weight: 700; letter-spacing: 6px;
-  background: linear-gradient(90deg, var(--cyan), var(--accent), var(--purple));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  border-color:var(--accent);box-shadow:0 0 12px rgba(0,180,255,.1)
 }
-.header .subtitle { font-size: 13px; color: var(--text-dim); margin-top: 4px; letter-spacing: 2px; }
+.form-group textarea{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:12px}
+.form-group select{
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236a7d9e'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:30px
+}
+.form-group select option{background:#0a1228;color:var(--text)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-/* ─── 统计卡片行 ─── */
-.stat-row {
-  position: relative; z-index: 1;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
-  margin-bottom: 16px;
+/* MODE TABS */
+.mode-tabs{display:flex;gap:6px;margin-bottom:16px}
+.mode-tab{
+  flex:1;padding:9px;border:1px solid var(--border-glow);border-radius:20px;
+  background:rgba(10,18,40,.5);color:var(--text-dim);
+  cursor:pointer;font-size:12px;transition:var(--transition-fast);font-weight:500;
+  position:relative;overflow:hidden;backdrop-filter:blur(6px);letter-spacing:.5px
 }
-.stat-card {
-  background: var(--bg-panel); border: 1px solid var(--border-glow);
-  border-radius: 8px; padding: 18px 20px; text-align: center;
-  position: relative; overflow: hidden;
-  backdrop-filter: blur(8px);
-}
-.stat-card::after {
-  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-}
-.stat-card:nth-child(1)::after { background: var(--accent); }
-.stat-card:nth-child(2)::after { background: var(--purple); }
-.stat-card:nth-child(3)::after { background: var(--gold); }
-.stat-card:nth-child(4)::after { background: var(--green); }
-.stat-card .label { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
-.stat-card .value { font-size: 28px; font-weight: 700; letter-spacing: 1px; }
-.stat-card:nth-child(1) .value { color: var(--accent); }
-.stat-card:nth-child(2) .value { color: var(--purple); }
-.stat-card:nth-child(3) .value { color: var(--gold); }
-.stat-card:nth-child(4) .value { color: var(--green); }
-.stat-card .unit { font-size: 13px; color: var(--text-dim); }
+.mode-tab::before{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(0,180,255,.15),rgba(136,94,240,.1));opacity:0;transition:opacity .25s}
+.mode-tab:hover{border-color:rgba(0,200,255,.4);color:var(--accent2)}
+.mode-tab:hover::before{opacity:.6}
+.mode-tab.active{background:linear-gradient(135deg,rgba(0,180,255,.2),rgba(136,94,240,.15));color:var(--accent);border-color:var(--accent);box-shadow:0 0 20px rgba(0,180,255,.15)}
 
-/* ─── Layout ─── */
-.main-grid {
-  position: relative; z-index: 1;
-  display: grid; grid-template-columns: 360px 1fr; gap: 16px;
+/* EXAMPLE TAGS */
+.example-tag{
+  background:rgba(136,94,240,.1);border:1px solid rgba(136,94,240,.25);
+  border-radius:5px;padding:5px 10px;font-size:11px;color:var(--purple2);
+  cursor:pointer;transition:var(--transition-fast);letter-spacing:.5px
 }
+.example-tag:hover{background:var(--purple);color:#fff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(136,94,240,.2)}
+.form-section{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05)}
 
-/* ─── Panel ─── */
-.panel {
-  background: var(--bg-panel); border: 1px solid var(--border-glow);
-  border-radius: 8px; padding: 16px; backdrop-filter: blur(8px);
-  animation: panelFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+/* BUTTONS */
+.btn{
+  padding:9px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;
+  transition:all .25s ease;position:relative;overflow:hidden;letter-spacing:.5px
 }
-.panel:nth-child(1) { animation-delay: 0.05s; }
-.panel:nth-child(2) { animation-delay: 0.15s; }
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+.btn::after{content:'';position:absolute;top:50%;left:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,.2);transform:translate(-50%,-50%);transition:width .6s,height .6s}
+.btn:active::after{width:300px;height:300px}
+.btn-primary{background:linear-gradient(135deg,rgba(0,180,255,.2),rgba(0,200,255,.1));border:1px solid rgba(0,180,255,.4);color:var(--accent2)}
+.btn-primary:hover{background:linear-gradient(135deg,var(--accent),#0088dd);color:#fff;border-color:var(--accent);box-shadow:0 0 20px rgba(0,180,255,.25)}
+.btn-success{background:linear-gradient(135deg,rgba(0,230,118,.15),rgba(0,230,118,.05));border:1px solid rgba(0,230,118,.3);color:var(--green2)}
+.btn-success:hover{background:linear-gradient(135deg,var(--green),#00c853);color:#fff;border-color:var(--green);box-shadow:0 0 20px rgba(0,230,118,.25)}
+.btn-danger{background:linear-gradient(135deg,rgba(255,107,61,.15),rgba(255,107,61,.05));border:1px solid rgba(255,107,61,.3);color:var(--warn2)}
+.btn-danger:hover{background:linear-gradient(135deg,var(--warn),#e55a2b);color:#fff;border-color:var(--warn);box-shadow:0 0 16px rgba(255,107,61,.25)}
+.btn-process{padding:12px 38px;font-size:14px;font-weight:600;border:2px solid var(--green);color:var(--green);background:linear-gradient(135deg,rgba(0,230,118,.12),rgba(0,230,118,.04));border-radius:10px;cursor:pointer;transition:var(--transition-fast);letter-spacing:1px}
+.btn-process:hover{background:var(--green);color:#fff;box-shadow:0 0 24px rgba(0,230,118,.3)}
+.btn-group{display:flex;gap:10px;margin-top:16px}
 
-@keyframes panelFadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* PROGRESS */
+.progress-section{background:var(--bg-panel);border:1px solid var(--border-glow);border-radius:var(--radius);padding:16px 20px;margin-bottom:14px;backdrop-filter:blur(var(--glass-blur))}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.progress-title{font-size:13px;color:var(--text)}
+.progress-percent{font-size:14px;color:var(--accent);font-weight:600}
+.progress-bar{height:8px;background:rgba(0,0,0,.4);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .4s ease;background:linear-gradient(90deg,var(--accent),var(--cyan),var(--purple2),var(--pink));background-size:200% 100%;animation:progShim 2s linear infinite;position:relative}
+.progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:progShine 1.5s ease infinite}
+@keyframes progShim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes progShine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 
-.panel h3 {
-  font-size: 14px; font-weight: 600; color: var(--text);
-  padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.06);
-  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
-}
-.panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+/* STATUS */
+.status-bar{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.05);margin-top:14px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--green);box-shadow:0 0 6px rgba(0,230,118,.5)}
+.status-dot.running{background:var(--accent);box-shadow:0 0 8px rgba(0,180,255,.6);animation:pulse 1.2s infinite}
+.status-msg{font-size:12px;color:var(--text-dim)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.8)}}
 
-/* ─── Form Controls ─── */
-.form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%; padding: 8px 12px; border: 1px solid var(--border-glow);
-  border-radius: 6px; font-size: 13px; outline: none;
-  background: rgba(0,0,0,.3); color: var(--text);
-  transition: border-color .2s, box-shadow .2s;
-}
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(0,168,255,.1);
-}
-.form-group textarea {
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-  font-size: 12px;
-}
-.form-group select option { background: #0e1832; color: var(--text); }
+/* PARSED RESULT */
+.parsed-result{background:rgba(0,0,0,.25);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;border-left:3px solid var(--accent)}
 
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* TERMINAL */
+.terminal-wrapper{background:#0a0f1a;border:1px solid rgba(0,180,255,.15);border-radius:var(--radius);overflow:hidden;font-family:'Cascadia Code','Fira Code','Consolas','Monaco',monospace;box-shadow:inset 0 0 40px rgba(0,0,0,.6)}
+.terminal-header{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#0e1525;border-bottom:1px solid rgba(0,180,255,.1)}
+.terminal-dots{display:flex;gap:7px}
+.terminal-dot{width:12px;height:12px;border-radius:50%}
+.terminal-dot.red{background:#ff5f56;box-shadow:0 0 4px rgba(255,95,86,.4)}
+.terminal-dot.yellow{background:#ffbd2e;box-shadow:0 0 4px rgba(255,189,46,.4)}
+.terminal-dot.green{background:#27c93f;box-shadow:0 0 4px rgba(39,201,63,.4)}
+.terminal-title{flex:1;text-align:center;font-size:11px;color:#586070}
+.terminal-clear{padding:5px 10px;border:1px solid rgba(255,255,255,.06);border-radius:4px;font-size:10px;cursor:pointer;background:transparent;color:#586070;transition:var(--transition-fast);font-family:inherit}
+.terminal-clear:hover{border-color:var(--accent);color:var(--accent)}
+.terminal-body{height:260px;overflow-y:auto;padding:14px 16px;font-size:12px;line-height:1.7;background:#090e18}
+.terminal-body::-webkit-scrollbar{width:6px}
+.terminal-body::-webkit-scrollbar-thumb{background:#1a2540;border-radius:3px}
+.terminal-body::-webkit-scrollbar-track{background:#090e18}
+.terminal-line{display:flex;align-items:flex-start;padding:3px 0;animation:termIn .2s ease}
+@keyframes termIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.terminal-time{color:#384860;font-size:10px;margin-right:10px;min-width:68px}
+.terminal-content{flex:1;word-break:break-all}
+.terminal-line.info .terminal-content{color:#7a8ea0}
+.terminal-line.success .terminal-content{color:#3fb950}
+.terminal-line.warning .terminal-content{color:#d29922}
+.terminal-line.error .terminal-content{color:#f85149}
+.terminal-line.process .terminal-content{color:#58a6ff}
+.terminal-line.system .terminal-content{color:#a371f7}
+.terminal-line .keyword{color:#ff7b72}
+.terminal-line .string{color:#a5d6ff}
+.terminal-line .number{color:#79c0ff}
+.terminal-line .function{color:#d2a8ff}
+.terminal-line .comment{color:#7a8ea0;font-style:italic}
 
-/* ─── Mode Tabs ─── */
-.mode-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
-.mode-tab {
-  flex: 1; padding: 9px; border: 1px solid var(--border-glow);
-  border-radius: 6px; background: transparent; color: var(--text-dim);
-  cursor: pointer; font-size: 12px; transition: all .2s; font-weight: 500;
-}
-.mode-tab:hover { border-color: var(--accent); color: var(--accent); }
-.mode-tab.active {
-  background: rgba(0,168,255,.15); color: var(--accent); border-color: var(--accent);
-}
+/* SUMMARY */
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.summary-item{background:rgba(0,0,0,.25);padding:14px;border-radius:8px;text-align:center;position:relative;overflow:hidden}
+.summary-item::after{content:'';position:absolute;top:0;left:0;width:100%;height:2px}
+.summary-item:nth-child(1)::after{background:var(--cyan)}
+.summary-item:nth-child(2)::after{background:var(--purple2)}
+.summary-item:nth-child(3)::after{background:var(--gold)}
+.summary-item .summary-value{font-size:24px;font-weight:700}
+.summary-item:nth-child(1) .summary-value{color:var(--cyan)}
+.summary-item:nth-child(2) .summary-value{color:var(--purple2)}
+.summary-item:nth-child(3) .summary-value{color:var(--gold)}
+.summary-item .summary-label{font-size:11px;color:var(--text-dim);margin-top:4px}
 
-/* ─── Example Tags ─── */
-.example-tag {
-  background: rgba(124,77,255,.1);
-  border: 1px solid rgba(124,77,255,.3);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
-  color: var(--purple);
-  cursor: pointer;
-  transition: all .2s;
-}
-.example-tag:hover {
-  background: var(--purple);
-  color: #fff;
-  transform: translateY(-1px);
-}
+/* TABLE */
+.preview-table-wrap{max-height:220px;overflow-y:auto;border-radius:6px}
+.preview-table-wrap::-webkit-scrollbar{width:5px}
+.preview-table-wrap::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--accent),var(--purple));border-radius:3px}
+.preview-table-wrap::-webkit-scrollbar-track{background:rgba(0,0,0,.25);border-radius:3px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:10px 12px;text-align:left;color:var(--accent);border-bottom:1px solid rgba(255,255,255,.08);font-weight:600;position:sticky;top:0;background:rgba(8,14,28,.95);letter-spacing:.5px;font-size:11px;text-transform:uppercase}
+tbody td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.02);color:var(--text)}
+tbody tr{transition:var(--transition-fast)}
+tbody tr:hover{background:rgba(0,180,255,.06)}
+.price-hl{color:var(--warn);font-weight:600}
+.platform-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:10px;background:rgba(0,180,255,.12);color:var(--accent);border:1px solid rgba(0,180,255,.2);letter-spacing:.5px}
 
-/* ─── Form Section ─── */
-.form-section {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,.06);
-}
+/* RIGHT COL */
+.right-col{display:flex;flex-direction:column;gap:16px}
+.process-section{text-align:center;margin-top:16px}
 
-/* ─── Buttons ─── */
-.btn {
-  padding: 8px 18px; border: 1px solid var(--accent); border-radius: 6px;
-  cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s;
-  background: rgba(0,168,255,.1); color: var(--accent);
-}
-.btn:hover { background: var(--accent); color: #fff; }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: #0090dd; }
-.btn-success { border-color: var(--green); color: var(--green); background: rgba(0,230,118,.1); }
-.btn-success:hover { background: var(--green); color: #fff; }
-.btn-danger { border-color: var(--warn); color: var(--warn); background: rgba(255,110,64,.1); }
-.btn-danger:hover { background: var(--warn); color: #fff; }
-.btn-process {
-  padding: 12px 36px; font-size: 14px; font-weight: 600;
-  border: 2px solid var(--green); color: var(--green);
-  background: rgba(0,230,118,.1); border-radius: 8px;
-  cursor: pointer; transition: all .2s;
-}
-.btn-process:hover { background: var(--green); color: #fff; }
+/* ENTRANCE GLOW */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;background:radial-gradient(ellipse at center,rgba(0,180,255,.06) 0%,transparent 70%);animation:glowPulse .8s cubic-bezier(0.4,0,0.2,1) forwards}
+@keyframes glowPulse{from{opacity:1}to{opacity:0}}
 
-.btn-group { display: flex; gap: 10px; margin-top: 16px; }
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}
 
-/* ─── Progress Section ─── */
-.progress-section {
-  background: var(--bg-panel); border: 1px solid var(--border-glow);
-  border-radius: 8px; padding: 16px 18px; margin-bottom: 14px;
-}
-.progress-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 10px;
-}
-.progress-title { font-size: 13px; color: var(--text); }
-.progress-percent { font-size: 13px; color: var(--accent); font-weight: 600; }
-.progress-bar {
-  height: 8px; background: rgba(0,0,0,.4); border-radius: 4px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan));
-  border-radius: 4px; transition: width 0.3s ease;
-  position: relative;
-}
-.progress-fill::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
-  animation: progressShine 2s ease infinite;
-}
-@keyframes progressShine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
+@media(max-width:1100px){.main-grid{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.stat-row{grid-template-columns:1fr}.header h1{font-size:24px;letter-spacing:3px}}
 
-/* ─── Status ─── */
-.status-bar {
-  display: flex; align-items: center; gap: 10px; padding: 10px 0;
-  border-top: 1px solid rgba(255,255,255,.06); margin-top: 14px;
-}
-.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--green); }
-.status-dot.running { background: var(--accent); animation: pulse 1s infinite; }
-.status-msg { font-size: 12px; color: var(--text-dim); }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-/* ─── Parsed Result ─── */
-.parsed-result {
-  background: rgba(0,0,0,.2);
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 12px;
-  font-size: 12px;
-  border-left: 3px solid var(--accent);
-}
-
-/* ─── Terminal Console ─── */
-.terminal-wrapper {
-  background: #0d1117;
-  border: 1px solid #30363d;
-  border-radius: 8px;
-  overflow: hidden;
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
-}
-.terminal-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: #161b22;
-  border-bottom: 1px solid #30363d;
-}
-.terminal-dots {
-  display: flex;
-  gap: 6px;
-}
-.terminal-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-.terminal-dot.red { background: #ff5f56; }
-.terminal-dot.yellow { background: #ffbd2e; }
-.terminal-dot.green { background: #27c93f; }
-.terminal-title {
-  flex: 1;
-  text-align: center;
-  font-size: 12px;
-  color: #8b949e;
-}
-.terminal-clear {
-  padding: 4px 10px;
-  border: 1px solid #30363d;
-  border-radius: 4px;
-  font-size: 11px;
-  cursor: pointer;
-  background: transparent;
-  color: #8b949e;
-  transition: all .2s;
-}
-.terminal-clear:hover { border-color: var(--accent); color: var(--accent); }
-
-.terminal-body {
-  height: 260px;
-  overflow-y: auto;
-  padding: 14px 16px;
-  font-size: 13px;
-  line-height: 1.6;
-  background: #0d1117;
-}
-.terminal-body::-webkit-scrollbar { width: 8px; }
-.terminal-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
-.terminal-body::-webkit-scrollbar-track { background: #0d1117; }
-
-.terminal-line {
-  display: flex;
-  align-items: flex-start;
-  padding: 3px 0;
-  animation: terminalFadeIn .2s ease;
-}
-@keyframes terminalFadeIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.terminal-time {
-  color: #484f58;
-  font-size: 11px;
-  margin-right: 10px;
-  min-width: 70px;
-}
-.terminal-content {
-  flex: 1;
-  word-break: break-all;
-}
-
-.terminal-line.info .terminal-content { color: #8b949e; }
-.terminal-line.success .terminal-content { color: #3fb950; }
-.terminal-line.warning .terminal-content { color: #d29922; }
-.terminal-line.error .terminal-content { color: #f85149; }
-.terminal-line.process .terminal-content { color: #58a6ff; }
-.terminal-line.system .terminal-content { color: #a371f7; font-style: italic; }
-
-.terminal-line .keyword { color: #ff7b72; }
-.terminal-line .string { color: #a5d6ff; }
-.terminal-line .number { color: #79c0ff; }
-.terminal-line .function { color: #d2a8ff; }
-.terminal-line .comment { color: #8b949e; font-style: italic; }
-
-/* ─── Summary Cards inside Preview ─── */
-.summary-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;
-}
-.summary-item {
-  background: rgba(0,0,0,.2); padding: 14px; border-radius: 6px; text-align: center;
-  position: relative; overflow: hidden;
-}
-.summary-item::after {
-  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-}
-.summary-item:nth-child(1)::after { background: var(--cyan); }
-.summary-item:nth-child(2)::after { background: var(--purple); }
-.summary-item:nth-child(3)::after { background: var(--gold); }
-.summary-item .summary-value { font-size: 24px; font-weight: 700; }
-.summary-item:nth-child(1) .summary-value { color: var(--cyan); }
-.summary-item:nth-child(2) .summary-value { color: var(--purple); }
-.summary-item:nth-child(3) .summary-value { color: var(--gold); }
-.summary-item .summary-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
-
-/* ─── Preview Table ─── */
-.preview-table-wrap { max-height: 220px; overflow-y: auto; }
-.preview-table-wrap::-webkit-scrollbar { width: 4px; }
-.preview-table-wrap::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
-
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-thead th {
-  padding: 8px 10px; text-align: left; color: var(--accent);
-  border-bottom: 1px solid rgba(255,255,255,.08); font-weight: 500;
-  position: sticky; top: 0; background: rgba(14, 24, 50, .95);
-}
-tbody td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.03); }
-tbody tr:hover { background: rgba(0,168,255,.05); }
-.price-hl { color: var(--warn); font-weight: 600; }
-.platform-badge {
-  display: inline-block; padding: 1px 10px; border-radius: 10px;
-  font-size: 11px; background: rgba(0,168,255,.12); color: var(--accent);
-}
-
-/* ─── Process Section ─── */
-.process-section {
-  text-align: center; margin-top: 16px;
-}
-
-/* ─── Right Column Stacking ─── */
-.right-col { display: flex; flex-direction: column; gap: 16px; }
-
-/* ─── Entrance Glow Pulse ─── */
-body::after {
-  content: '';
-  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
-  background: radial-gradient(ellipse at center, rgba(0,168,255,0.06) 0%, transparent 70%);
-  animation: glowPulse 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-@keyframes glowPulse {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-/* ─── Responsive ─── */
-@media (max-width: 1100px) {
-  .main-grid { grid-template-columns: 1fr; }
-  .stat-row { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px) {
-  .stat-row { grid-template-columns: 1fr; }
-  .header h1 { font-size: 24px; letter-spacing: 3px; }
-}
-
-/* ─── Scrollbar (Global) ─── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-::-webkit-scrollbar-track { background: rgba(0,0,0,.2); }
+/* RANGE SLIDER */
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:6px;background:linear-gradient(90deg,var(--cyan),var(--purple2));border-radius:3px;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff;box-shadow:0 0 10px rgba(0,180,255,.4)}
 </style>
 </head>
 <body>
 
+<canvas id="starfield"></canvas>
+<div class="scan-line"></div>
+
 <div class="container">
-  <!-- Header -->
   <div class="header">
     <h1>数据制造工厂</h1>
-    <div class="subtitle">DATA FACTORY -- CONCLUSION-DRIVEN DATA GENERATION</div>
+    <div class="subtitle">DATA FACTORY — CONCLUSION-DRIVEN DATA GENERATION</div>
+    <div class="glow-line"></div>
   </div>
 
-  <!-- Stat Cards -->
   <div class="stat-row">
-    <div class="stat-card">
-      <div class="label">生成数据</div>
-      <div class="value" id="statCount">0</div>
-      <div class="unit">条</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">价格均值</div>
-      <div class="value" id="statPrice">-</div>
-      <div class="unit">元</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">评分均值</div>
-      <div class="value" id="statRating">-</div>
-      <div class="unit">分</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">运行状态</div>
-      <div class="value" id="statStatus" style="font-size:16px;">就绪</div>
-      <div class="unit">&nbsp;</div>
-    </div>
+    <div class="stat-card"><div class="card-accent"></div><div class="label">生成数据</div><div class="value" id="statCount">0</div><div class="unit">条</div></div>
+    <div class="stat-card"><div class="card-accent"></div><div class="label">价格均值</div><div class="value" id="statPrice">-</div><div class="unit">元</div></div>
+    <div class="stat-card"><div class="card-accent"></div><div class="label">评分均值</div><div class="value" id="statRating">-</div><div class="unit">分</div></div>
+    <div class="stat-card"><div class="card-accent"></div><div class="label">运行状态</div><div class="value" id="statStatus" style="font-size:16px">就绪</div><div class="unit">&nbsp;</div></div>
   </div>
 
-  <!-- Main Layout -->
   <div class="main-grid">
-    <!-- Left Panel: Config -->
-    <div class="panel">
-      <h3><span class="dot" style="background:var(--accent)"></span>结论配置</h3>
-
-      <!-- Mode Switch -->
+    <!-- LEFT -->
+    <div class="glass-panel">
+      <h3><span class="dot" style="background:var(--accent);color:var(--accent)"></span>结论配置</h3>
       <div class="mode-tabs">
         <button class="mode-tab active" onclick="switchMode('structured')">结构化输入</button>
         <button class="mode-tab" onclick="switchMode('natural')">自然语言</button>
       </div>
 
-      <!-- Structured Input Mode -->
       <div id="structuredMode">
         <div class="form-group">
           <label>目标品类</label>
           <select id="categorySelect">
             <option value="">全部品类 (均衡分布)</option>
             <option value="漆器">漆器 (传统工艺)</option>
-            <option value="手机">手机</option>
-            <option value="电脑">电脑</option>
-            <option value="家电">家电</option>
-            <option value="服装">服装</option>
-            <option value="食品">食品</option>
-            <option value="图书">图书</option>
-            <option value="美妆">美妆</option>
-            <option value="家居">家居</option>
+            <option value="手机">手机</option><option value="电脑">电脑</option>
+            <option value="家电">家电</option><option value="服装">服装</option>
+            <option value="食品">食品</option><option value="图书">图书</option>
+            <option value="美妆">美妆</option><option value="家居">家居</option>
             <option value="数码">数码</option>
           </select>
         </div>
-
         <div class="form-group">
           <label>价格区间 (元)</label>
           <div class="form-row">
@@ -482,10 +318,8 @@ body::after {
             <input type="number" id="priceMaxInput" placeholder="最高价" value="50000" min="0">
           </div>
         </div>
-
         <div class="form-section">
-          <div style="font-size:11px;color:var(--purple);margin-bottom:10px;font-weight:500;">👥 人群画像</div>
-
+          <div style="font-size:11px;color:var(--purple2);margin-bottom:10px;font-weight:500;letter-spacing:1px">人群画像</div>
           <div class="form-group">
             <label>年龄范围 (岁)</label>
             <div class="form-row">
@@ -493,23 +327,20 @@ body::after {
               <input type="number" id="ageMaxInput" placeholder="最大" value="60" min="1" max="100">
             </div>
           </div>
-
           <div class="form-group">
             <label>性别比例</label>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
-              <span style="font-size:12px;color:var(--cyan);min-width:20px;">男</span>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+              <span style="font-size:12px;color:var(--cyan);min-width:20px">男</span>
               <input type="range" id="genderSlider" min="0" max="100" value="50" style="flex:1" oninput="updateGenderDisplay()">
-              <span style="font-size:12px;color:var(--purple);min-width:20px;">女</span>
+              <span style="font-size:12px;color:var(--purple2);min-width:20px">女</span>
             </div>
-            <div style="text-align:center;font-size:12px;margin-top:4px;color:var(--text-dim);">
+            <div style="text-align:center;font-size:12px;margin-top:4px;color:var(--text-dim)">
               <span id="maleRatioDisplay">50</span>% : <span id="femaleRatioDisplay">50</span>%
             </div>
           </div>
         </div>
-
         <div class="form-section">
-          <div style="font-size:11px;color:var(--gold);margin-bottom:10px;font-weight:500;">📈 数据趋势</div>
-
+          <div style="font-size:11px;color:var(--gold);margin-bottom:10px;font-weight:500;letter-spacing:1px">数据趋势</div>
           <div class="form-group">
             <label>价格趋势</label>
             <select id="priceTrendSelect">
@@ -519,7 +350,6 @@ body::after {
               <option value="稳定">保持稳定</option>
             </select>
           </div>
-
           <div class="form-group">
             <label>评分水平</label>
             <select id="ratingLevelSelect">
@@ -532,16 +362,14 @@ body::after {
         </div>
       </div>
 
-      <!-- Natural Language Mode -->
-      <div id="naturalMode" style="display:none;">
+      <div id="naturalMode" style="display:none">
         <div class="form-group">
           <label>结论语句</label>
           <textarea id="conclusionInput" rows="4" placeholder="例如: 手机品类价格呈上涨趋势，年龄18-35岁，女性占比65%"></textarea>
         </div>
-
-        <div style="margin-bottom:12px;">
-          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">示例结论 (点击使用):</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">示例结论 (点击使用):</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
             <span class="example-tag" onclick="useExample('漆器品类，价格100-500元，女性占比70%')">漆器首饰盒</span>
             <span class="example-tag" onclick="useExample('漆器品类，价格500-2000元，年龄30-50岁')">漆器收藏品</span>
             <span class="example-tag" onclick="useExample('漆器品类，手工雕刻，女性占比65%')">手工漆器</span>
@@ -549,20 +377,15 @@ body::after {
             <span class="example-tag" onclick="useExample('美妆品类，女性占比80%，年龄25-40岁')">美妆女性</span>
           </div>
         </div>
-
-        <div id="parsedResult" class="parsed-result" style="display:none;">
-          <div style="color:var(--accent);margin-bottom:6px;">已解析:</div>
+        <div id="parsedResult" class="parsed-result" style="display:none">
+          <div style="color:var(--accent);margin-bottom:6px;font-weight:600">已解析:</div>
           <div id="parsedContent"></div>
         </div>
       </div>
 
-      <!-- Common Settings -->
       <div class="form-section">
         <div class="form-row">
-          <div class="form-group">
-            <label>生成数量</label>
-            <input type="number" id="countInput" value="500" min="1" max="10000">
-          </div>
+          <div class="form-group"><label>生成数量</label><input type="number" id="countInput" value="500" min="1" max="10000"></div>
           <div class="form-group">
             <label>输出格式</label>
             <select id="formatSelect">
@@ -576,377 +399,110 @@ body::after {
 
       <div class="btn-group">
         <button class="btn btn-primary" id="generateBtn" onclick="generateData()">生成数据</button>
-        <button class="btn btn-danger" id="resetBtn" onclick="resetTask()" style="display:none;">重置状态</button>
+        <button class="btn btn-danger" id="resetBtn" onclick="resetTask()" style="display:none">重置状态</button>
       </div>
-
       <div class="status-bar">
         <span class="status-dot" id="statusDot"></span>
         <span class="status-msg" id="statusMsg">就绪</span>
       </div>
     </div>
 
-    <!-- Right Column -->
+    <!-- RIGHT -->
     <div class="right-col">
-      <!-- Progress Section -->
-      <div class="progress-section" id="progressSection" style="display:none;">
+      <div class="progress-section" id="progressSection" style="display:none">
         <div class="progress-header">
           <span class="progress-title" id="progressTitle">准备生成...</span>
           <span class="progress-percent" id="progressPercent">0%</span>
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill" style="width:0%;"></div>
-        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
 
-      <!-- Terminal Console -->
       <div class="terminal-wrapper">
         <div class="terminal-header">
-          <div class="terminal-dots">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
-          </div>
+          <div class="terminal-dots"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span></div>
           <span class="terminal-title">hejinshun-data-factory ~ bash</span>
           <button class="terminal-clear" onclick="clearTerminal()">清空</button>
         </div>
         <div class="terminal-body" id="terminalBody">
-          <div class="terminal-line system">
-            <span class="terminal-time">00:00:00</span>
-            <span class="terminal-content">数据工厂初始化完成，等待操作...</span>
-          </div>
+          <div class="terminal-line system"><span class="terminal-time">00:00:00</span><span class="terminal-content">数据工厂初始化完成，等待操作...</span></div>
         </div>
       </div>
 
-      <!-- Data Preview Panel -->
-      <div class="panel">
-        <h3><span class="dot" style="background:var(--purple)"></span>数据预览</h3>
-
-        <div id="previewContent" style="color:var(--text-dim);font-size:13px;text-align:center;padding:30px;">
-          配置完成后点击"生成数据"<br>
-          数据将包含: 品类、价格、评分、评论数、用户年龄、用户性别、用户地区等字段
+      <div class="glass-panel">
+        <h3><span class="dot" style="background:var(--purple2);color:var(--purple2)"></span>数据预览</h3>
+        <div id="previewContent" style="color:var(--text-dim);font-size:13px;text-align:center;padding:30px">
+          配置完成后点击"生成数据"<br>数据将包含: 品类、价格、评分、评论数、用户年龄、用户性别、用户地区等字段
         </div>
-
-        <div id="dataSummary" style="display:none;">
+        <div id="dataSummary" style="display:none">
           <div class="summary-grid">
-            <div class="summary-item">
-              <div class="summary-value" id="summaryCount">0</div>
-              <div class="summary-label">数据条数</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-value" id="summaryPrice">-</div>
-              <div class="summary-label">价格均值</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-value" id="summaryRating">-</div>
-              <div class="summary-label">评分均值</div>
-            </div>
+            <div class="summary-item"><div class="summary-value" id="summaryCount">0</div><div class="summary-label">数据条数</div></div>
+            <div class="summary-item"><div class="summary-value" id="summaryPrice">-</div><div class="summary-label">价格均值</div></div>
+            <div class="summary-item"><div class="summary-value" id="summaryRating">-</div><div class="summary-label">评分均值</div></div>
           </div>
-
           <div class="preview-table-wrap" id="previewTable"></div>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="process-section" id="actionBtns" style="display:none;">
+      <div class="process-section" id="actionBtns" style="display:none">
         <button class="btn btn-process" onclick="downloadData()">下载文件</button>
-        <button class="btn btn-process" style="margin-left:12px;border-color:var(--green);" onclick="exportToHejinshun()">导出到和金顺平台</button>
+        <button class="btn btn-process" style="margin-left:12px" onclick="exportToHejinshun()">导出到和金顺平台</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-let currentMode = 'structured';
-let generateRunning = false;
+// ═══ STARFIELD ═══
+(function(){var c=document.getElementById('starfield'),ctx=c.getContext('2d'),stars=[];function rz(){c.width=window.innerWidth;c.height=window.innerHeight;}rz();window.addEventListener('resize',rz);for(var i=0;i<100;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+.3,a:Math.random(),s:Math.random()*.01+.002,dx:(Math.random()-.5)*.25,dy:(Math.random()-.5)*.25});function dr(){ctx.clearRect(0,0,c.width,c.height);for(var i=0;i<stars.length;i++){var s=stars[i];s.a+=s.s;var alpha=.35+Math.sin(s.a)*.3;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(0,200,255,'+alpha+')';ctx.fill();s.x+=s.dx;s.y+=s.dy;if(s.x<0)s.x=c.width;if(s.x>c.width)s.x=0;if(s.y<0)s.y=c.height;if(s.y>c.height)s.y=0;}requestAnimationFrame(dr);}dr();})();
 
-// ─── Timestamp ───
-function getTimestamp() {
-  return new Date().toTimeString().slice(0, 8);
-}
+var currentMode='structured',generateRunning=false;
+function getTs(){return new Date().toTimeString().slice(0,8)}
 
-// ─── Terminal Logging ───
-function terminalLog(msg, type = 'info') {
-  const body = document.getElementById('terminalBody');
-  const line = document.createElement('div');
-  line.className = `terminal-line ${type}`;
+function terminalLog(msg,type){type=type||'info';var body=document.getElementById('terminalBody'),line=document.createElement('div');line.className='terminal-line '+type;var time=document.createElement('span');time.className='terminal-time';time.textContent=getTs();var content=document.createElement('span');content.className='terminal-content';content.innerHTML=fmtTerm(msg,type);line.appendChild(time);line.appendChild(content);body.appendChild(line);body.scrollTop=body.scrollHeight}
+function fmtTerm(msg,type){var prefs={info:'<span class="comment"># </span>',success:'<span class="string">[OK] </span>',warning:'<span class="keyword">[WARN] </span>',error:'<span class="keyword">[ERR] </span>',process:'<span class="function">[RUN] </span>',system:'<span class="comment">[SYS] </span>'};var f=msg.replace(/(\d+)/g,'<span class="number">$1</span>').replace(/(https?:\/\/[^\s]+)/g,'<span class="string">$1</span>').replace(/(漆器|京东|什么值得买|淘宝|美妆|家居|数码|手机|电脑|家电|服装|食品|图书)/g,'<span class="keyword">$1</span>');return(prefs[type]||'')+f}
+function clearTerminal(){var body=document.getElementById('terminalBody');body.innerHTML='<div class="terminal-line system"><span class="terminal-time">'+getTs()+'</span><span class="terminal-content">终端已清空，等待操作...</span></div>'}
 
-  const time = document.createElement('span');
-  time.className = 'terminal-time';
-  time.textContent = getTimestamp();
+function switchMode(mode){currentMode=mode;document.querySelectorAll('.mode-tab').forEach(function(t){t.classList.remove('active')});event.target.classList.add('active');document.getElementById('structuredMode').style.display=mode==='structured'?'block':'none';document.getElementById('naturalMode').style.display=mode==='natural'?'block':'none'}
+function updateGenderDisplay(){var v=document.getElementById('genderSlider').value;document.getElementById('maleRatioDisplay').textContent=v;document.getElementById('femaleRatioDisplay').textContent=100-v}
+function useExample(text){document.getElementById('conclusionInput').value=text;document.getElementById('parsedResult').style.display='none'}
 
-  const content = document.createElement('span');
-  content.className = 'terminal-content';
-  content.innerHTML = formatTerminalMessage(msg, type);
+function collectStructuredParams(){return{category:document.getElementById('categorySelect').value||null,priceMin:parseFloat(document.getElementById('priceMinInput').value)||null,priceMax:parseFloat(document.getElementById('priceMaxInput').value)||null,ageMin:parseInt(document.getElementById('ageMinInput').value)||null,ageMax:parseInt(document.getElementById('ageMaxInput').value)||null,femaleRatio:100-parseInt(document.getElementById('genderSlider').value),priceTrend:document.getElementById('priceTrendSelect').value||null,ratingLevel:document.getElementById('ratingLevelSelect').value||null,count:parseInt(document.getElementById('countInput').value)||500,format:document.getElementById('formatSelect').value}}
 
-  line.appendChild(time);
-  line.appendChild(content);
-  body.appendChild(line);
-  body.scrollTop = body.scrollHeight;
-}
+function updProgress(cur,tot,title){var pct=tot>0?Math.round((cur/tot)*100):0;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressPercent').textContent=pct+'%';if(title)document.getElementById('progressTitle').textContent=title}
+function updStatCards(count,price,rating,status){if(count!==undefined)document.getElementById('statCount').textContent=count;if(price!==undefined)document.getElementById('statPrice').textContent=price;if(rating!==undefined)document.getElementById('statRating').textContent=rating;if(status!==undefined)document.getElementById('statStatus').textContent=status}
 
-function formatTerminalMessage(msg, type) {
-  const prefixes = {
-    'info': '<span class="comment"># </span>',
-    'success': '<span class="string">[OK] </span>',
-    'warning': '<span class="keyword">[WARN] </span>',
-    'error': '<span class="keyword">[ERR] </span>',
-    'process': '<span class="function">[RUN] </span>',
-    'system': '<span class="comment">[SYS] </span>'
-  };
-
-  let formatted = msg
-    .replace(/(\d+)/g, '<span class="number">$1</span>')
-    .replace(/(https?:\/\/[^\s]+)/g, '<span class="string">$1</span>')
-    .replace(/(漆器|京东|什么值得买|淘宝|美妆|家居|数码|手机|电脑|家电|服装|食品|图书)/g, '<span class="keyword">$1</span>');
-
-  return (prefixes[type] || '') + formatted;
-}
-
-function clearTerminal() {
-  const body = document.getElementById('terminalBody');
-  body.innerHTML = `
-    <div class="terminal-line system">
-      <span class="terminal-time">${getTimestamp()}</span>
-      <span class="terminal-content">终端已清空，等待操作...</span>
-    </div>`;
-}
-
-// ─── Mode Switch ───
-function switchMode(mode) {
-  currentMode = mode;
-  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
-
-  document.getElementById('structuredMode').style.display = mode === 'structured' ? 'block' : 'none';
-  document.getElementById('naturalMode').style.display = mode === 'natural' ? 'block' : 'none';
-}
-
-// ─── Gender Slider ───
-function updateGenderDisplay() {
-  const value = document.getElementById('genderSlider').value;
-  document.getElementById('maleRatioDisplay').textContent = value;
-  document.getElementById('femaleRatioDisplay').textContent = 100 - value;
-}
-
-// ─── Example Tags ───
-function useExample(text) {
-  document.getElementById('conclusionInput').value = text;
-  document.getElementById('parsedResult').style.display = 'none';
-}
-
-// ─── Collect Structured Params ───
-function collectStructuredParams() {
-  return {
-    category: document.getElementById('categorySelect').value || null,
-    priceMin: parseFloat(document.getElementById('priceMinInput').value) || null,
-    priceMax: parseFloat(document.getElementById('priceMaxInput').value) || null,
-    ageMin: parseInt(document.getElementById('ageMinInput').value) || null,
-    ageMax: parseInt(document.getElementById('ageMaxInput').value) || null,
-    femaleRatio: 100 - parseInt(document.getElementById('genderSlider').value),
-    priceTrend: document.getElementById('priceTrendSelect').value || null,
-    ratingLevel: document.getElementById('ratingLevelSelect').value || null,
-    count: parseInt(document.getElementById('countInput').value) || 500,
-    format: document.getElementById('formatSelect').value
-  };
-}
-
-// ─── Update Progress ───
-function updateProgress(current, total, title) {
-  const percent = total > 0 ? Math.round((current / total) * 100) : 0;
-  document.getElementById('progressFill').style.width = percent + '%';
-  document.getElementById('progressPercent').textContent = percent + '%';
-  if (title) document.getElementById('progressTitle').textContent = title;
-}
-
-// ─── Update Stat Cards ───
-function updateStatCards(count, price, rating, status) {
-  if (count !== undefined) document.getElementById('statCount').textContent = count;
-  if (price !== undefined) document.getElementById('statPrice').textContent = price;
-  if (rating !== undefined) document.getElementById('statRating').textContent = rating;
-  if (status !== undefined) document.getElementById('statStatus').textContent = status;
-}
-
-// ─── Generate Data ───
-async function generateData() {
-  if (generateRunning) return;
-
-  let params;
-  let endpoint;
-
-  if (currentMode === 'structured') {
-    params = collectStructuredParams();
-    endpoint = '/api/generate-structured';
-    terminalLog(`结构化模式 - 品类: ${params.category || '全部'}, 数量: ${params.count}`, 'info');
-  } else {
-    const conclusion = document.getElementById('conclusionInput').value.trim();
-    if (!conclusion) {
-      terminalLog('请输入结论语句', 'error');
-      return;
-    }
-    params = {
-      conclusion,
-      count: parseInt(document.getElementById('countInput').value) || 500,
-      format: document.getElementById('formatSelect').value
-    };
-    endpoint = '/api/generate-from-conclusion';
-    terminalLog(`自然语言模式 - 结论: ${conclusion.slice(0, 40)}...`, 'info');
-  }
-
-  // UI state
-  document.getElementById('generateBtn').disabled = true;
-  document.getElementById('resetBtn').style.display = 'inline-block';
-  document.getElementById('statusDot').classList.add('running');
-  document.getElementById('statusMsg').textContent = '正在生成...';
-  document.getElementById('actionBtns').style.display = 'none';
-  document.getElementById('progressSection').style.display = 'block';
-  updateProgress(0, 0, '准备生成...');
-  updateStatCards(undefined, undefined, undefined, '生成中');
-  generateRunning = true;
-
-  terminalLog(`发送生成请求...`, 'process');
-  terminalLog(`目标数量: ${params.count}, 格式: ${params.format}`, 'info');
-
-  try {
-    const resp = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
-    });
-    const data = await resp.json();
-
-    if (data.error) {
-      terminalLog(data.error, 'error');
-      resetUI();
-      return;
-    }
-
-    terminalLog('生成任务已启动', 'success');
-
-    // Show parsed result for natural language mode
-    if (currentMode === 'natural' && data.parsed) {
-      showParsedResult(data.parsed);
-    }
-
+async function generateData(){
+  if(generateRunning)return;
+  var params,endpoint;
+  if(currentMode==='structured'){params=collectStructuredParams();endpoint='/api/generate-structured';terminalLog('结构化模式 - 品类: '+(params.category||'全部')+', 数量: '+params.count,'info')}
+  else{var conclusion=document.getElementById('conclusionInput').value.trim();if(!conclusion){terminalLog('请输入结论语句','error');return}params={conclusion:conclusion,count:parseInt(document.getElementById('countInput').value)||500,format:document.getElementById('formatSelect').value};endpoint='/api/generate-from-conclusion';terminalLog('自然语言模式 - 结论: '+conclusion.slice(0,40)+'...','info')}
+  document.getElementById('generateBtn').disabled=true;document.getElementById('resetBtn').style.display='inline-block';
+  document.getElementById('statusDot').classList.add('running');document.getElementById('statusMsg').textContent='正在生成...';
+  document.getElementById('actionBtns').style.display='none';document.getElementById('progressSection').style.display='block';
+  updProgress(0,0,'准备生成...');updStatCards(undefined,undefined,undefined,'生成中');generateRunning=true;
+  terminalLog('发送生成请求...','process');terminalLog('目标数量: '+params.count+', 格式: '+params.format,'info');
+  try{var r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)});var d=await r.json();
+    if(d.error){terminalLog(d.error,'error');resetUI();return}
+    terminalLog('生成任务已启动','success');
+    if(currentMode==='natural'&&d.parsed)showParsedResult(d.parsed);
     pollStatus();
-  } catch (e) {
-    terminalLog('请求失败: ' + e.message, 'error');
-    resetUI();
-  }
+  }catch(e){terminalLog('请求失败: '+e.message,'error');resetUI()}
 }
 
-// ─── Reset Task ───
-async function resetTask() {
-  try {
-    await fetch('/api/reset', { method: 'POST' });
-    terminalLog('状态已重置', 'warning');
-    resetUI();
-    updateStatCards(0, '-', '-', '就绪');
-  } catch (e) {
-    terminalLog('重置失败: ' + e.message, 'error');
-  }
+async function resetTask(){try{await fetch('/api/reset',{method:'POST'});terminalLog('状态已重置','warning');resetUI();updStatCards(0,'-','-','就绪')}catch(e){terminalLog('重置失败: '+e.message,'error')}}
+function resetUI(){generateRunning=false;document.getElementById('generateBtn').disabled=false;document.getElementById('resetBtn').style.display='none';document.getElementById('statusDot').classList.remove('running');document.getElementById('statusMsg').textContent='就绪';document.getElementById('progressSection').style.display='none'}
+
+function showParsedResult(parsed){var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';if(parsed.category)h+='<span>品类: <b style="color:var(--cyan)">'+parsed.category+'</b></span>';if(parsed.platform)h+='<span>平台: <b style="color:var(--cyan)">'+parsed.platform+'</b></span>';if(parsed.metric)h+='<span>指标: <b style="color:var(--cyan)">'+parsed.metric+'</b></span>';if(parsed.direction)h+='<span>趋势: <b style="color:var(--cyan)">'+parsed.direction+'</b></span>';h+='</div>';h+='<div style="margin-top:6px;color:var(--text-dim)">置信度: '+(parsed.confidence*100).toFixed(0)+'%</div>';document.getElementById('parsedContent').innerHTML=h;document.getElementById('parsedResult').style.display='block';terminalLog('结论解析完成 - 置信度: '+(parsed.confidence*100).toFixed(0)+'%','success')}
+
+async function pollStatus(){try{var r=await fetch('/api/status');var s=await r.json();document.getElementById('statusMsg').textContent=s.message;var mt=s.message.includes('出错')?'error':s.message.includes('完成')?'success':'process';terminalLog(s.message,mt);
+  if(s.total>0){var pct=Math.round((s.current/s.total)*100);document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressPercent').textContent=pct+'%';document.getElementById('progressTitle').textContent='生成进度: '+s.current+'/'+s.total}
+  if(s.running){setTimeout(pollStatus,500)}else{generateRunning=false;document.getElementById('statusDot').classList.remove('running');document.getElementById('generateBtn').disabled=false;
+    if(s.output_file){document.getElementById('actionBtns').style.display='block';document.getElementById('summaryCount').textContent=s.current;document.getElementById('dataSummary').style.display='block';document.getElementById('previewContent').style.display='none';updStatCards(s.current,undefined,undefined,'完成');updProgress(s.current,s.total,'生成完成');terminalLog('数据生成完成，共 '+s.current+' 条记录','success');terminalLog('输出文件: '+s.output_file,'info')}else{resetUI()}
+  }}catch(e){terminalLog('状态查询失败: '+e.message,'error');resetUI()}
 }
 
-// ─── Reset UI State ───
-function resetUI() {
-  generateRunning = false;
-  document.getElementById('generateBtn').disabled = false;
-  document.getElementById('resetBtn').style.display = 'none';
-  document.getElementById('statusDot').classList.remove('running');
-  document.getElementById('statusMsg').textContent = '就绪';
-  document.getElementById('progressSection').style.display = 'none';
-}
-
-// ─── Show Parsed Result ───
-function showParsedResult(parsed) {
-  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
-  if (parsed.category) html += `<span>品类: <b style="color:var(--cyan)">${parsed.category}</b></span>`;
-  if (parsed.platform) html += `<span>平台: <b style="color:var(--cyan)">${parsed.platform}</b></span>`;
-  if (parsed.metric) html += `<span>指标: <b style="color:var(--cyan)">${parsed.metric}</b></span>`;
-  if (parsed.direction) html += `<span>趋势: <b style="color:var(--cyan)">${parsed.direction}</b></span>`;
-  if (parsed.age_range) html += `<span>年龄: <b style="color:var(--cyan)">${parsed.age_range[0]}-${parsed.age_range[1]}岁</b></span>`;
-  if (parsed.gender_ratio) html += `<span>性别: <b style="color:var(--cyan)">${(parsed.gender_ratio.female*100).toFixed(0)}%女</b></span>`;
-  html += '</div>';
-  html += `<div style="margin-top:6px;color:var(--text-dim);">置信度: ${(parsed.confidence * 100).toFixed(0)}%</div>`;
-
-  document.getElementById('parsedContent').innerHTML = html;
-  document.getElementById('parsedResult').style.display = 'block';
-  terminalLog(`结论解析完成 - 置信度: ${(parsed.confidence * 100).toFixed(0)}%`, 'success');
-}
-
-// ─── Poll Status ───
-async function pollStatus() {
-  try {
-    const resp = await fetch('/api/status');
-    const status = await resp.json();
-
-    document.getElementById('statusMsg').textContent = status.message;
-
-    // Log status messages
-    const msgType = status.message.includes('出错') ? 'error' :
-                    status.message.includes('完成') ? 'success' : 'process';
-    terminalLog(status.message, msgType);
-
-    if (status.total > 0) {
-      const pct = Math.round((status.current / status.total) * 100);
-      document.getElementById('progressFill').style.width = pct + '%';
-      document.getElementById('progressPercent').textContent = pct + '%';
-      document.getElementById('progressTitle').textContent = `生成进度: ${status.current}/${status.total}`;
-    }
-
-    if (status.running) {
-      setTimeout(pollStatus, 500);
-    } else {
-      generateRunning = false;
-      document.getElementById('statusDot').classList.remove('running');
-      document.getElementById('generateBtn').disabled = false;
-
-      if (status.output_file) {
-        document.getElementById('actionBtns').style.display = 'block';
-        document.getElementById('summaryCount').textContent = status.current;
-        document.getElementById('dataSummary').style.display = 'block';
-        document.getElementById('previewContent').style.display = 'none';
-
-        updateStatCards(status.current, undefined, undefined, '完成');
-        updateProgress(status.current, status.total, '生成完成');
-
-        terminalLog(`数据生成完成，共 ${status.current} 条记录`, 'success');
-        terminalLog(`输出文件: ${status.output_file}`, 'info');
-      } else {
-        resetUI();
-      }
-    }
-  } catch (e) {
-    terminalLog('状态查询失败: ' + e.message, 'error');
-    resetUI();
-  }
-}
-
-// ─── Download ───
-function downloadData() {
-  terminalLog('开始下载文件...', 'process');
-  window.location.href = '/api/download';
-  setTimeout(() => terminalLog('下载请求已发送', 'success'), 500);
-}
-
-// ─── Export to Hejinshun ───
-async function exportToHejinshun() {
-  terminalLog('正在导出到和金顺平台...', 'process');
-  try {
-    const resp = await fetch('/api/export', { method: 'POST' });
-    const data = await resp.json();
-    if (data.success) {
-      terminalLog(`导出成功！新增 ${data.new_count} 条，总计 ${data.total_count} 条`, 'success');
-      alert('已导出到和金顺平台！\n启动和金顺仪表盘即可查看。');
-    } else {
-      terminalLog(data.error || '导出失败', 'error');
-      alert(data.error || '导出失败');
-    }
-  } catch (e) {
-    terminalLog('导出失败: ' + e.message, 'error');
-    alert('导出失败: ' + e.message);
-  }
-}
+function downloadData(){terminalLog('开始下载文件...','process');window.location.href='/api/download';setTimeout(function(){terminalLog('下载请求已发送','success')},500)}
+async function exportToHejinshun(){terminalLog('正在导出到和金顺平台...','process');try{var r=await fetch('/api/export',{method:'POST'});var d=await r.json();if(d.success){terminalLog('导出成功！新增 '+d.new_count+' 条，总计 '+d.total_count+' 条','success');alert('已导出到和金顺平台！\n启动和金顺仪表盘即可查看。')}else{terminalLog(d.error||'导出失败','error');alert(d.error||'导出失败')}}catch(e){terminalLog('导出失败: '+e.message,'error');alert('导出失败: '+e.message)}}
 </script>
-
 </body>
 </html>

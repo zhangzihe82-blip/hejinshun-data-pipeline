@@ -21,6 +21,10 @@ data/chrome_profile/
 Thumbs.db
 .DS_Store
 
+# Tooling
+.omc/
+.claude/
+
 # Environment
 .env
 venv/
